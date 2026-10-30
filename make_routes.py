@@ -28,15 +28,15 @@ orig = np.asarray(base).copy()
 RED = (227, 38, 43)
 GREEN = (30, 158, 58)
 TEXT = (36, 37, 40)
-LINE_W = 4.4        # stroke width, px (+10 %)
-HEAD_LEN = 16.0     # arrowhead length, px
-DASH_BODY = 9.0     # dash stroke length, px
-DASH_HEAD = 6.0     # length of the small pointer on every dash, px
-DASH_HW = 6.0       # its base width
-DASH_GAP = 6.0      # gap between dashes, px
-HEAD_W = 14.0       # arrowhead base width, px
-MID_W = 11.0        # base width of the intermediate arrowheads (narrower: must fit between the red line and the courtyard wall)
-OFF = 5.2           # half-distance between parallel red/green centre lines: line gap 2*OFF-LINE_W = 6 px
+LINE_W = 8.8        # stroke width, px (x2)
+HEAD_LEN = 20.0     # arrowhead length, px
+DASH_BODY = 18.0    # dash stroke length, px (dash pattern scaled x2 with the stroke)
+DASH_HEAD = 12.0    # length of the small pointer on every dash, px
+DASH_HW = 12.0      # its base width
+DASH_GAP = 12.0     # gap between dashes, px
+HEAD_W = 18.0       # arrowhead base width, px
+MID_W = 16.0        # base width of the intermediate arrowheads (narrower: must fit between the red line and the courtyard wall)
+OFF = 10.4          # half-distance between parallel red/green centre lines: line gap 2*OFF-LINE_W = 12 px
 
 
 # ---------- geometry helpers ----------
@@ -100,9 +100,9 @@ def fillet_path(pts, radii, step=0.25):
 # ---------- route geometry ----------
 EAST, NORTH = (1, 0), (0, -1)
 L_ARCH = line_pd((246, 1179), EAST)                 # through the arch
-L_YARD = line_pd((348, 1179), NORTH)                 # courtyard driveway, vertical (+1.5 px east: room for the 6 px gap)
-L_DIAG = line_pd((460, 957), (1, -0.385))            # courtyard driveway, diagonal (+4.5 px south: clear of facade)
-L_TOP = line_pd((600, 916.5), EAST)                  # driveway in front of the museum (+3.5 px: clear of the notch)
+L_YARD = line_pd((355.5, 1179), NORTH)               # courtyard driveway, vertical (+9 px east: room for the 12 px gap)
+L_DIAG = line_pd((460, 964.8), (1, -0.385))          # courtyard driveway, diagonal (+12.5 px south: clear of facade)
+L_TOP = line_pd((600, 925), EAST)                    # driveway in front of the museum (+12 px: clear of the notch)
 TIP_Y = 855                                          # arrow tips, just short of the facade
 
 
@@ -117,17 +117,17 @@ def shared(side):
     return [meet(a, y), meet(y, g), meet(g, t)]
 
 
-R_ARCH_TURN, R_DIAG, R_TOP = 10, 12, 20
-red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(610, 916.5 - OFF), (610, TIP_Y)]
+R_ARCH_TURN, R_DIAG, R_TOP = 14, 16, 20
+red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(611, 925 - OFF), (611, TIP_Y)]
 red_lane = line_pd((curb_lane(1480), 1480), (curb_lane(1176) - curb_lane(1480), 1176 - 1480))
 red_v[1] = meet(red_lane, offset(L_ARCH, -OFF))
 red = fillet_path(red_v, [12, R_ARCH_TURN - OFF, R_DIAG + OFF, R_TOP - OFF, 8])
 
-walk_lane = line_pd((248.5, 1385), (4, -203))           # middle of the east sidewalk (narrows to the south)
-green_s_v = [(248.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(626, 916.5 + OFF), (626, TIP_Y)]
+walk_lane = line_pd((245.5, 1385), (4, -203))           # east sidewalk, kept clear of the facade (narrows to the south)
+green_s_v = [(245.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(632, 925 + OFF), (632, TIP_Y)]
 green_s = fillet_path(green_s_v, [8, R_ARCH_TURN + OFF, R_DIAG - OFF, R_TOP + OFF, 8])
 
-green_n = fillet_path([(252, 985), (252, 1167)], [])
+green_n = fillet_path([(250, 985), (250, 1158)], [])   # stops short of the wider red line; 2 px off the facade
 
 ROUTES = [("red_car", red, RED), ("green_walk_south", green_s, GREEN), ("green_walk_north", green_n, GREEN)]
 
