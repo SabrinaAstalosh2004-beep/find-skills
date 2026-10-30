@@ -50,6 +50,15 @@ for name, goal in (("red_car", DEST), ("green_walk_south", DEST), ("green_walk_n
     seg = np.diff(p, axis=0)
     # remaining distance along the route decreases strictly (no back-tracking)
     check(f"{name}: head points to goal", (goal - tip) @ d > 0, f"tip {tip.round(1).tolist()}, dir {d.tolist()}")
+    # every dash pointer is aligned with the direction of travel and they follow each other forwards
+    dh = meta[name]["dash_heads"]
+    cum = np.r_[0, np.cumsum(np.linalg.norm(seg, axis=1))]
+    fwd = [float(np.array(h["dir"]) @ (seg[min(np.searchsorted(cum, h["s"]), len(seg)) - 1]
+                                       / np.linalg.norm(seg[min(np.searchsorted(cum, h["s"]), len(seg)) - 1])))
+           for h in dh]
+    gaps = np.diff([h["s"] for h in dh])
+    check(f"{name}: all {len(dh)} dash pointers face the direction of travel", min(fwd) > 0.95 and np.all(gaps > 0),
+          f"min cos {min(fwd):.3f}, covered {dh[0]['s']:.0f}..{dh[-1]['s']:.0f} of {cum[-1]:.0f} px")
 for name in ("red_car", "green_walk_south"):
     tip = np.array(meta[name]["path"][-1])
     check(f"{name} ends at the museum facade under the check mark", abs(tip[0] - DEST[0]) <= 16 and 0 < tip[1] - DEST[1] < 40,

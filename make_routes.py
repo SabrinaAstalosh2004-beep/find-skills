@@ -30,6 +30,10 @@ GREEN = (30, 158, 58)
 TEXT = (36, 37, 40)
 LINE_W = 4.0        # stroke width, px
 HEAD_LEN = 16.0     # arrowhead length, px
+DASH_BODY = 9.0     # dash stroke length, px
+DASH_HEAD = 6.0     # length of the small pointer on every dash, px
+DASH_HW = 6.0       # its base width: stays inside the 2 px gap to the parallel route
+DASH_GAP = 6.0      # gap between dashes, px
 HEAD_W = 14.0       # arrowhead base width, px
 OFF = 3.5           # half-distance between parallel red/green centre lines
 
@@ -97,7 +101,7 @@ EAST, NORTH = (1, 0), (0, -1)
 L_ARCH = line_pd((246, 1179), EAST)                 # through the arch
 L_YARD = line_pd((346.5, 1179), NORTH)               # courtyard driveway, vertical
 L_DIAG = line_pd((460, 955.5), (1, -0.385))          # courtyard driveway, diagonal (+3 px south: clear of facade)
-L_TOP = line_pd((600, 914), EAST)                    # driveway in front of the museum (+1 px: clear of the notch)
+L_TOP = line_pd((600, 915), EAST)                    # driveway in front of the museum (+2 px: clear of the notch)
 TIP_Y = 855                                          # arrow tips, just short of the facade
 
 
@@ -113,13 +117,13 @@ def shared(side):
 
 
 R_ARCH_TURN, R_DIAG, R_TOP = 10, 12, 20
-red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(610, 914 - OFF), (610, TIP_Y)]
+red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(610, 915 - OFF), (610, TIP_Y)]
 red_lane = line_pd((curb_lane(1480), 1480), (curb_lane(1176) - curb_lane(1480), 1176 - 1480))
 red_v[1] = meet(red_lane, offset(L_ARCH, -OFF))
 red = fillet_path(red_v, [12, R_ARCH_TURN - OFF, R_DIAG + OFF, R_TOP - OFF, 8])
 
 walk_lane = line_pd((248.5, 1385), (4, -203))           # middle of the east sidewalk (narrows to the south)
-green_s_v = [(248.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(626, 914 + OFF), (626, TIP_Y)]
+green_s_v = [(248.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(626, 915 + OFF), (626, TIP_Y)]
 green_s = fillet_path(green_s_v, [8, R_ARCH_TURN + OFF, R_DIAG - OFF, R_TOP + OFF, 8])
 
 green_n = fillet_path([(252, 985), (252, 1167)], [])
@@ -129,7 +133,7 @@ ROUTES = [("red_car", red, RED), ("green_walk_south", green_s, GREEN), ("green_w
 
 # ---------- rasterise ----------
 def draw_arrow(path):
-    """Return (alpha float32 HxW, head polygon) for a path with one arrowhead at its end."""
+    """Return (alpha, head polygon, end direction, dash pointers) for a dashed path ending in an arrowhead."""
     big = np.zeros((H * SS, W * SS), np.uint8)
     tip = path[-1]
     # tangent at the end
@@ -140,23 +144,41 @@ def draw_arrow(path):
     nrm = np.array([-d[1], d[0]])
     base_c = tip - d * HEAD_LEN
     head = np.array([tip, base_c + nrm * HEAD_W / 2, base_c - nrm * HEAD_W / 2])
-    # stroke stops inside the head so the tip stays sharp
+    # dashed stroke: every dash is a small pointer "—▸" towards the destination;
+    # the pattern is anchored at the final arrowhead and repeated back to the start
     seg_len = np.r_[0, np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))]
-    keep = seg_len <= seg_len[-1] - HEAD_LEN + 2
-    body = path[keep]
-    pts = np.round(body * SS * 16).astype(np.int32)  # 4 fractional bits
-    cv2.polylines(big, [pts.reshape(-1, 1, 2)], False, 255, int(round(LINE_W * SS)), cv2.LINE_8, shift=4)
+    period = DASH_BODY + DASH_HEAD + DASH_GAP
+    dash_heads = []
+    tip_s = seg_len[-1] - HEAD_LEN - DASH_GAP
+    while tip_s - DASH_HEAD > 1:
+        h0 = tip_s - DASH_HEAD                       # dash head base
+        b0 = max(0.0, h0 - DASH_BODY + LINE_W / 2)   # body start (round cap adds LINE_W/2)
+        body = path[(seg_len >= b0) & (seg_len <= h0)]
+        if len(body) >= 2:
+            pts = np.round(body * SS * 16).astype(np.int32)  # 4 fractional bits
+            cv2.polylines(big, [pts.reshape(-1, 1, 2)], False, 255, int(round(LINE_W * SS)), cv2.LINE_8, shift=4)
+        i = min(np.searchsorted(seg_len, tip_s), len(path) - 1)
+        p_tip = path[i]
+        dd = path[i] - path[np.searchsorted(seg_len, tip_s - 1.5)]   # local tangent at the tip
+        dd /= np.linalg.norm(dd)
+        p_base = p_tip - dd * DASH_HEAD
+        nn = np.array([-dd[1], dd[0]])
+        tri = np.array([p_tip, p_base + nn * DASH_HW / 2, p_base - nn * DASH_HW / 2])
+        cv2.fillPoly(big, [np.round(tri * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
+        dash_heads.append({"s": float(tip_s), "tip": p_tip.round(2).tolist(), "dir": dd.round(4).tolist()})
+        tip_s -= period
     cv2.fillPoly(big, [np.round(head * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
     a = cv2.resize(big, (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
-    return a, head, d
+    return a, head, d, dash_heads[::-1]
 
 
 layers = []
 meta = {}
 for name, path, col in ROUTES:
-    a, head, d = draw_arrow(path)
+    a, head, d, dash_heads = draw_arrow(path)
     layers.append((a, col))
-    meta[name] = {"path": path.round(2).tolist(), "head": head.round(2).tolist(), "end_dir": d.round(4).tolist()}
+    meta[name] = {"path": path.round(2).tolist(), "head": head.round(2).tolist(), "end_dir": d.round(4).tolist(),
+                  "dash_heads": dash_heads}
 
 # ---------- label ----------
 LABEL = "ИЗМАЙЛОВСКИЙ ПРОСПЕКТ"
