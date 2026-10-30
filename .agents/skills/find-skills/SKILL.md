@@ -72,7 +72,7 @@ For example:
 
 ### Step 5: Present Options to the User
 
-When you find relevant skills, present them to the user with:
+When you find relevant skills, present them with:
 
 1. The skill name and what it does
 2. The install count and source
@@ -119,12 +119,10 @@ When searching, consider these common categories:
 ## Tips for Effective Searches
 
 1. **Use specific keywords**: "react testing" is better than just "testing"
-2. **Try alternative terms**: If "deploy" doesn't work, try "deployment" or "ci-cd"
+2. **Try alternative terms**: "deploy" or "ci-cd"
 3. **Check popular sources**: Many skills come from `vercel-labs/agent-skills` or `ComposioHQ/awesome-claude-skills`
 
 ## When No Skills Are Found
-
-If no relevant skills exist:
 
 1. Acknowledge that no existing skill was found
 2. Offer to help with the task directly using your general capabilities
