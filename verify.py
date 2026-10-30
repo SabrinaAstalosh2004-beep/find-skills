@@ -1,0 +1,91 @@
+import json
+import sys
+
+import cv2
+import numpy as np
+from PIL import Image
+
+SRC, OUT = sys.argv[1], sys.argv[2]
+o = np.asarray(Image.open(SRC).convert("RGB")).astype(int)
+r = np.asarray(Image.open(OUT).convert("RGB")).astype(int)
+L = np.load(OUT + ".layers.npz")
+meta = json.load(open(OUT + ".meta.json"))
+ok = True
+
+
+def check(name, cond, info=""):
+    global ok
+    ok &= bool(cond)
+    print(("PASS " if cond else "FAIL ") + name + (f"  [{info}]" if info else ""))
+
+
+# 1. size
+check("size identical", o.shape == r.shape, f"{o.shape[1]}x{o.shape[0]} -> {r.shape[1]}x{r.shape[0]}")
+
+# 2. pixels outside the drawn masks are unchanged
+union = np.zeros(o.shape[:2], bool)
+for k in L.files:
+    union |= L[k] > 0
+diff = np.any(o != r, axis=-1)
+check("no changed pixel outside masks", not np.any(diff & ~union),
+      f"changed={diff.sum()}, mask={union.sum()} px ({100 * union.mean():.2f}% of image), outside={np.sum(diff & ~union)}")
+
+# 3. arch: the only passage through the building along the prospekt (light strip y 1175-1182)
+ARCH_X, ARCH_Y = (262, 334), (1170, 1188)
+for name in ("red_car", "green_walk_south"):
+    p = np.array(meta[name]["path"])
+    inside = p[(p[:, 0] >= ARCH_X[0]) & (p[:, 0] <= ARCH_X[1])]
+    check(f"{name} passes through the arch", len(inside) and inside[:, 1].min() >= ARCH_Y[0] and inside[:, 1].max() <= ARCH_Y[1],
+          f"y in arch span {inside[:, 1].min():.1f}-{inside[:, 1].max():.1f}")
+pn = np.array(meta["green_walk_north"]["path"])
+check("green_walk_north ends at the arch entrance (continues on green line)",
+      np.hypot(*(pn[-1] - [252, 1179])) < 15 and abs(pn[-1][0] - 252) < 1, f"tip {pn[-1].round(1).tolist()}")
+
+# 4. arrowheads point towards destination
+DEST = np.array([626, 822])  # vertex of the check mark (mapped)
+for name, goal in (("red_car", DEST), ("green_walk_south", DEST), ("green_walk_north", np.array([252, 1182]))):
+    p = np.array(meta[name]["path"])
+    d = np.array(meta[name]["end_dir"])
+    tip = p[-1]
+    seg = np.diff(p, axis=0)
+    # remaining distance along the route decreases strictly (no back-tracking)
+    check(f"{name}: head points to goal", (goal - tip) @ d > 0, f"tip {tip.round(1).tolist()}, dir {d.tolist()}")
+for name in ("red_car", "green_walk_south"):
+    tip = np.array(meta[name]["path"][-1])
+    check(f"{name} ends at the museum facade under the check mark", abs(tip[0] - DEST[0]) <= 16 and 0 < tip[1] - DEST[1] < 40,
+          f"tip {tip.round(1).tolist()}")
+
+# building mask (beige building fill) of the ORIGINAL
+R, G, B = o[..., 0], o[..., 1], o[..., 2]
+bld = (R - B >= 7) & (R >= 215) & (R <= 240) & (G <= R) & (np.abs(G - B) < 12)
+bld = cv2.morphologyEx(bld.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
+arch = np.zeros_like(bld)
+arch[ARCH_Y[0]:ARCH_Y[1] + 1, 255:342] = True
+for k, name in (("red", "red"), ("green_s", "green south"), ("green_n", "green north")):
+    hit = (L[k] > 0.05) & bld & ~arch
+    ys, xs = np.nonzero(hit)
+    check(f"{name}: no building crossing outside the arch", hit.sum() == 0,
+          f"{hit.sum()} px" + (f" at x{xs.min()}-{xs.max()} y{ys.min()}-{ys.max()}" if hit.sum() else ""))
+
+# 5. red and green never overlap; label overlaps nothing drawn
+green = (L["green_s"] > 0) | (L["green_n"] > 0)
+check("red/green overlap", np.sum((L["red"] > 0) & green) == 0, f"{np.sum((L['red'] > 0) & green)} px")
+d_rg = cv2.distanceTransform((~(L["red"] > 0)).astype(np.uint8), cv2.DIST_L2, 5)
+print(f"     min gap red->green: {d_rg[green].min():.2f} px")
+routes = (L["red"] > 0) | green
+check("label does not touch the arrows", np.sum((L["text"] > 0) & routes) == 0)
+
+# 6. label position
+q = np.array(meta["label"]["quad"])
+ctr = q.mean(0)
+MARK_C, MARK_ANG = np.array([222.0, 1144.0]), 4.1  # centre/angle of the mark on image 2 (mapped)
+check("label centred on the mark", np.hypot(*(ctr - MARK_C)) < 25, f"label centre {ctr.round(1).tolist()}, mark {MARK_C.tolist()}")
+check("label parallel to the road", abs(meta["label"]["angle_deg_from_vertical"] - MARK_ANG) < 2,
+      f"{meta['label']['angle_deg_from_vertical']:.1f} deg vs mark {MARK_ANG} deg / dividing strip 4.9 deg")
+t = L["text"] > 0
+for nm, (x0, x1, y0, y1) in {"lane arrow": (218, 227, 1204, 1231), "traffic light": (226, 248, 892, 930)}.items():
+    check(f"label clear of {nm}", not t[y0:y1 + 1, x0:x1 + 1].any())
+ys, xs = np.nonzero(t)
+check("label inside roadway (x 125..246)", xs.min() >= 125 and xs.max() <= 246, f"x {xs.min()}-{xs.max()}, y {ys.min()}-{ys.max()}")
+
+print("\nALL CHECKS PASSED" if ok else "\nSOME CHECKS FAILED")
