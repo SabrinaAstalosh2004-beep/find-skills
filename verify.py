@@ -59,6 +59,16 @@ for name, goal in (("red_car", DEST), ("green_walk_south", DEST), ("green_walk_n
     gaps = np.diff([h["s"] for h in dh])
     check(f"{name}: all {len(dh)} dash pointers face the direction of travel", min(fwd) > 0.95 and np.all(gaps > 0),
           f"min cos {min(fwd):.3f}, covered {dh[0]['s']:.0f}..{dh[-1]['s']:.0f} of {cum[-1]:.0f} px")
+    # intermediate arrowheads: spacing 30-40 % of the route length, facing the direction of travel
+    mh = meta[name].get("mid_heads", [])
+    fr = [0.0] + [h["frac"] for h in mh] + [1.0]
+    sp = np.diff(fr)
+    cosm = [float(np.array(h["dir"]) @ (seg[min(np.searchsorted(cum, h["s"]), len(seg)) - 1]
+                                        / np.linalg.norm(seg[min(np.searchsorted(cum, h["s"]), len(seg)) - 1])))
+            for h in mh]
+    check(f"{name}: {len(mh)} intermediate arrowheads every 30-40 % (+-2 %) facing forward",
+          len(mh) == 2 and np.all((sp >= 0.279) & (sp <= 0.421)) and min(cosm) > 0.99,
+          ("" if np.all((sp >= 0.299) & (sp <= 0.401)) else "WIDENED, ") + "spacing " + " / ".join(f"{100 * x:.1f}%" for x in sp) + f", min cos {min(cosm):.3f}")
 for name in ("red_car", "green_walk_south"):
     tip = np.array(meta[name]["path"][-1])
     check(f"{name} ends at the museum facade under the check mark", abs(tip[0] - DEST[0]) <= 16 and 0 < tip[1] - DEST[1] < 40,

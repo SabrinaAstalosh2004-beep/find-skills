@@ -35,6 +35,7 @@ DASH_HEAD = 6.0     # length of the small pointer on every dash, px
 DASH_HW = 6.0       # its base width
 DASH_GAP = 6.0      # gap between dashes, px
 HEAD_W = 14.0       # arrowhead base width, px
+MID_W = 11.0        # base width of the intermediate arrowheads (narrower: must fit between the red line and the courtyard wall)
 OFF = 5.2           # half-distance between parallel red/green centre lines: line gap 2*OFF-LINE_W = 6 px
 
 
@@ -132,7 +133,19 @@ ROUTES = [("red_car", red, RED), ("green_walk_south", green_s, GREEN), ("green_w
 
 
 # ---------- rasterise ----------
-def draw_arrow(path):
+def head_at(path, s, width=MID_W):
+    """Arrowhead polygon (same length as the final one) with its tip at arc length s, and its direction."""
+    seg_len = np.r_[0, np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))]
+    i = min(np.searchsorted(seg_len, s), len(path) - 1)
+    tip = path[i]
+    d = tip - path[np.searchsorted(seg_len, s - 6)]
+    d /= np.linalg.norm(d)
+    nrm = np.array([-d[1], d[0]])
+    base_c = tip - d * HEAD_LEN
+    return np.array([tip, base_c + nrm * width / 2, base_c - nrm * width / 2]), d
+
+
+def draw_arrow(path, mid_s=()):
     """Return (alpha, head polygon, end direction, dash pointers) for a dashed path ending in an arrowhead."""
     big = np.zeros((H * SS, W * SS), np.uint8)
     tip = path[-1]
@@ -167,15 +180,20 @@ def draw_arrow(path):
         cv2.fillPoly(big, [np.round(tri * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
         dash_heads.append({"s": float(tip_s), "tip": p_tip.round(2).tolist(), "dir": dd.round(4).tolist()})
         tip_s -= period
+    mids = []
+    for ms in mid_s:  # intermediate arrowheads along the route
+        poly, md = head_at(path, ms)
+        cv2.fillPoly(big, [np.round(poly * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
+        mids.append({"s": float(ms), "frac": float(ms / seg_len[-1]), "tip": poly[0].round(2).tolist(), "dir": md.round(4).tolist()})
     cv2.fillPoly(big, [np.round(head * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
     a = cv2.resize(big, (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
-    return a, head, d, dash_heads[::-1]
+    return a, head, d, dash_heads[::-1], mids
 
 
 layers = []
 meta = {}
 for name, path, col in ROUTES:
-    a, head, d, dash_heads = draw_arrow(path)
+    a, head, d, dash_heads, _ = draw_arrow(path)
     layers.append((a, col))
     meta[name] = {"path": path.round(2).tolist(), "head": head.round(2).tolist(), "end_dir": d.round(4).tolist(),
                   "dash_heads": dash_heads}
@@ -218,6 +236,62 @@ corners = np.array([[cols[0], 4 * SS], [cols[-1], 4 * SS], [cols[-1], th - 4 * S
 meta["label"] = {"text": LABEL, "baseline_mid": target.tolist(),
                  "angle_deg_from_vertical": float(np.degrees(np.arctan2(u[0], -u[1]))),
                  "quad": ((Mx[:, :2] @ corners.T).T / SS + Mx[:, 2] / SS).round(1).tolist()}
+
+# ---------- intermediate arrowheads: every 30-40 % of each route's length ----------
+# Positions are searched inside the allowed window so that a head sits on a straight stretch and
+# touches neither a building (nor the arch walls), nor the other colour, nor the label.
+R_, G_, B_ = (orig[..., i].astype(int) for i in range(3))
+bld = (R_ - B_ >= 7) & (R_ >= 215) & (R_ <= 240) & (G_ <= R_) & (np.abs(G_ - B_) < 12)
+bld = cv2.morphologyEx(bld.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
+# the arch is not exempt here: an intermediate head inside it would stick out of the narrow passage
+
+
+def head_mask(poly):
+    big = np.zeros((H * SS, W * SS), np.uint8)
+    cv2.fillPoly(big, [np.round(poly * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
+    return cv2.resize(big, (W, H), interpolation=cv2.INTER_AREA) > 0
+
+
+def pick_mids(path, blocked, lo=0.30, hi=0.40):
+    total = np.sum(np.linalg.norm(np.diff(path, axis=0), axis=1))
+    best = None
+    fr = np.arange(lo, hi + 0.0001, 0.005)
+    for f1 in fr:
+        for g in fr:
+            f2 = f1 + g
+            if not lo <= 1 - f2 <= hi:
+                continue
+            score = abs(f1 - 1 / 3) + abs(g - 1 / 3) + abs(1 - f2 - 1 / 3)
+            if best is not None and score >= best[0]:
+                continue
+            good = True
+            for f in (f1, f2):
+                poly, d = head_at(path, f * total)
+                _, d0 = head_at(path, f * total - HEAD_LEN)
+                if d @ d0 < np.cos(np.radians(3)) or (head_mask(poly) & blocked).any():
+                    good = False
+                    break
+            if good:
+                best = (score, [f1 * total, f2 * total])
+    if best is None:
+        # no free spot inside 30-40 %: widen the window step by step (red: courtyard wall at 60-70 %)
+        assert hi - lo < 0.2, "no valid positions for intermediate arrowheads"
+        return pick_mids(path, blocked, lo - 0.01, hi + 0.01)
+    return best[1]
+
+
+text_m = layers[0][0] > 0
+alphas = {name: layers[i + 1][0] for i, (name, _, _) in enumerate(ROUTES)}
+for i, (name, path, col) in enumerate(ROUTES):
+    other = np.zeros((H, W), bool)
+    for on, (_, _, oc) in zip(alphas, ROUTES):
+        if oc != col:
+            other |= alphas[on] > 0
+    mid_s = pick_mids(path, bld | other | text_m)
+    a, _, _, _, mids = draw_arrow(path, mid_s)
+    alphas[name] = a
+    layers[i + 1] = (a, col)
+    meta[name]["mid_heads"] = mids
 
 # ---------- composite ----------
 out = orig.astype(np.float32)
