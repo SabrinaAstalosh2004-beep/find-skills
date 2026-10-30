@@ -29,13 +29,13 @@ RED = (227, 38, 43)
 GREEN = (30, 158, 58)
 TEXT = (36, 37, 40)
 LINE_W = 8.8        # stroke width, px (x2)
-HEAD_LEN = 20.0     # arrowhead length, px
-DASH_BODY = 18.0    # dash stroke length, px (dash pattern scaled x2 with the stroke)
-DASH_HEAD = 12.0    # length of the small pointer on every dash, px
-DASH_HW = 12.0      # its base width
-DASH_GAP = 12.0     # gap between dashes, px
-HEAD_W = 18.0       # arrowhead base width, px
-MID_W = 16.0        # base width of the intermediate arrowheads (narrower: must fit between the red line and the courtyard wall)
+HEAD_LEN = 20.0     # final arrowhead length, px
+HEAD_W = 18.0       # final arrowhead base width, px
+DASH_BODY = 18.0    # straight shaft of every dash, px (butt ends)
+DASH_HEAD = 12.0    # triangular pointer on every dash, px
+DASH_HW = 15.0      # pointer base width: clearly wider than the shaft
+DASH_GAP = 12.0     # nominal gap between dashes (stretched to 8..18 px to fill each straight run)
+MID_BODY, MID_HEAD, MID_W = 14.0, 16.0, 18.0  # accent dashes every 30-40 %: same length, larger pointer
 OFF = 10.4          # half-distance between parallel red/green centre lines: line gap 2*OFF-LINE_W = 12 px
 
 
@@ -100,9 +100,9 @@ def fillet_path(pts, radii, step=0.25):
 # ---------- route geometry ----------
 EAST, NORTH = (1, 0), (0, -1)
 L_ARCH = line_pd((246, 1179), EAST)                 # through the arch
-L_YARD = line_pd((355.5, 1179), NORTH)               # courtyard driveway, vertical (+9 px east: room for the 12 px gap)
-L_DIAG = line_pd((460, 964.8), (1, -0.385))          # courtyard driveway, diagonal (+12.5 px south: clear of facade)
-L_TOP = line_pd((600, 925), EAST)                    # driveway in front of the museum (+12 px: clear of the notch)
+L_YARD = line_pd((357.5, 1179), NORTH)               # courtyard driveway, vertical (+11 px east: room for the 12 px gap)
+L_DIAG = line_pd((460, 967), (1, -0.385))            # courtyard driveway, diagonal (+14.7 px south: clear of facade)
+L_TOP = line_pd((600, 927), EAST)                    # driveway in front of the museum (+14 px: clear of the notch)
 TIP_Y = 855                                          # arrow tips, just short of the facade
 
 
@@ -118,13 +118,13 @@ def shared(side):
 
 
 R_ARCH_TURN, R_DIAG, R_TOP = 14, 16, 20
-red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(611, 925 - OFF), (611, TIP_Y)]
+red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(611, 927 - OFF), (611, TIP_Y)]
 red_lane = line_pd((curb_lane(1480), 1480), (curb_lane(1176) - curb_lane(1480), 1176 - 1480))
 red_v[1] = meet(red_lane, offset(L_ARCH, -OFF))
 red = fillet_path(red_v, [12, R_ARCH_TURN - OFF, R_DIAG + OFF, R_TOP - OFF, 8])
 
-walk_lane = line_pd((245.5, 1385), (4, -203))           # east sidewalk, kept clear of the facade (narrows to the south)
-green_s_v = [(245.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(632, 925 + OFF), (632, TIP_Y)]
+walk_lane = line_pd((244.5, 1385), (4, -203))           # east sidewalk, kept clear of the facade (narrows to the south)
+green_s_v = [(244.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(632, 927 + OFF), (632, TIP_Y)]
 green_s = fillet_path(green_s_v, [8, R_ARCH_TURN + OFF, R_DIAG - OFF, R_TOP + OFF, 8])
 
 green_n = fillet_path([(250, 985), (250, 1158)], [])   # stops short of the wider red line; 2 px off the facade
@@ -133,23 +133,93 @@ ROUTES = [("red_car", red, RED), ("green_walk_south", green_s, GREEN), ("green_w
 
 
 # ---------- rasterise ----------
-def head_at(path, s, width=MID_W):
-    """Arrowhead polygon (same length as the final one) with its tip at arc length s, and its direction."""
-    seg_len = np.r_[0, np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))]
-    i = min(np.searchsorted(seg_len, s), len(path) - 1)
-    tip = path[i]
-    d = tip - path[np.searchsorted(seg_len, s - 6)]
-    d /= np.linalg.norm(d)
-    nrm = np.array([-d[1], d[0]])
-    base_c = tip - d * HEAD_LEN
-    return np.array([tip, base_c + nrm * width / 2, base_c - nrm * width / 2]), d
+# Every dash is one rigid polygon (straight shaft + triangle), laid out only on straight stretches
+# of the route, so nothing is bent around curves or blurred by overlapping strokes.
+def poly_mask(poly):
+    big = np.zeros((H * SS, W * SS), np.uint8)
+    cv2.fillPoly(big, [np.round(poly * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
+    return big
 
 
-def draw_arrow(path, mid_s=()):
-    """Return (alpha, head polygon, end direction, dash pointers) for a dashed path ending in an arrowhead."""
+def dash_poly(p0, d, body, head, hw):
+    """Shaft from p0 along d (length body, width LINE_W) followed by a pointer (length head, base width hw)."""
+    n = np.array([-d[1], d[0]])
+    neck = p0 + d * body
+    tip = neck + d * head
+    w, h = LINE_W / 2, hw / 2
+    return np.array([p0 + n * w, neck + n * w, neck + n * h, tip, neck - n * h, neck - n * w, p0 - n * w])
+
+
+def straight_runs(path, end_s):
+    """(s_start, s_end, start point, direction) of every straight piece of the path before end_s."""
+    seg = np.diff(path, axis=0)
+    ln = np.linalg.norm(seg, axis=1)
+    cum = np.r_[0, np.cumsum(ln)]
+    ang = np.arctan2(seg[:, 1], seg[:, 0])
+    straight = np.r_[np.abs(np.diff(np.unwrap(ang))) < 1e-4, True]
+    runs, i = [], 0
+    while i < len(seg):
+        if not straight[i]:
+            i += 1
+            continue
+        j = i
+        while j + 1 < len(seg) and straight[j + 1] and abs(ang[j + 1] - ang[i]) < 1e-4:
+            j += 1
+        sa, sb = cum[i], min(cum[j + 1], end_s)
+        if sb - sa > 1:
+            runs.append((sa, sb, path[i], seg[i] / ln[i]))
+        i = j + 1
+    return runs, cum
+
+
+def fill(lo, hi, p_run, sa, d):
+    """Evenly spaced dashes filling [lo, hi] on a straight run starting at arc length sa."""
+    ld = DASH_BODY + DASH_HEAD
+    avail = hi - lo
+    if avail < ld:
+        return []
+    n = max(1, int(round((avail + DASH_GAP) / (ld + DASH_GAP))))
+    while n > 1 and (avail - n * ld) / (n - 1) < 8:
+        n -= 1
+    gap = min((avail - n * ld) / (n - 1), 18) if n > 1 else 0
+    start = lo + (avail - (n * ld + (n - 1) * gap)) / 2
+    return [(s0, p_run + d * (s0 - sa), d, False) for s0 in start + np.arange(n) * (ld + gap)]
+
+
+def layout(path, accents=()):
+    """Dash slots (s_tail, start point, direction, is_accent). Accent dashes have their tips at the given
+    arc lengths; ordinary dashes fill the rest of every straight run evenly."""
+    total = np.sum(np.linalg.norm(np.diff(path, axis=0), axis=1))
+    end = total - HEAD_LEN - DASH_GAP
+    runs, cum = straight_runs(path, end)
+    ld = DASH_BODY + DASH_HEAD
+    slots = []
+    for sa, sb, p_run, d in runs:
+        lo = sa + (2.0 if sa > 0 else 0.0)            # small margin next to a curve
+        hi = sb - (2.0 if sb < end - 0.5 else 0.0)
+        for ac in sorted(a for a in accents if sa <= a - ld and a <= sb):
+            slots += fill(lo, ac - ld - DASH_GAP, p_run, sa, d)
+            slots.append((ac - ld, p_run + d * (ac - ld - sa), d, True))
+            lo = ac + DASH_GAP
+        slots += fill(lo, hi, p_run, sa, d)
+    return slots, total
+
+
+def accent_fits(path, s_tip):
+    """Accent dash with its tip at s_tip lies on one straight run (margin 2 px); returns its slot or None."""
+    total = np.sum(np.linalg.norm(np.diff(path, axis=0), axis=1))
+    runs, _ = straight_runs(path, total - HEAD_LEN - DASH_GAP)
+    ld = DASH_BODY + DASH_HEAD
+    for sa, sb, p_run, d in runs:
+        if sa + (2.0 if sa > 0 else 0.0) <= s_tip - ld and s_tip <= sb - 2.0:
+            return p_run + d * (s_tip - ld - sa), d
+    return None
+
+
+def draw_arrow(path, accents=()):
+    """Return (alpha, final head, end direction, dash pointers, accents) for a dashed route."""
     big = np.zeros((H * SS, W * SS), np.uint8)
     tip = path[-1]
-    # tangent at the end
     k = len(path) - 1
     while np.linalg.norm(path[k] - tip) < 6 and k > 0:
         k -= 1
@@ -157,37 +227,20 @@ def draw_arrow(path, mid_s=()):
     nrm = np.array([-d[1], d[0]])
     base_c = tip - d * HEAD_LEN
     head = np.array([tip, base_c + nrm * HEAD_W / 2, base_c - nrm * HEAD_W / 2])
-    # dashed stroke: every dash is a small pointer "—▸" towards the destination;
-    # the pattern is anchored at the final arrowhead and repeated back to the start
-    seg_len = np.r_[0, np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))]
-    period = DASH_BODY + DASH_HEAD + DASH_GAP
-    dash_heads = []
-    tip_s = seg_len[-1] - HEAD_LEN - DASH_GAP
-    while tip_s - DASH_HEAD > 1:
-        h0 = tip_s - DASH_HEAD                       # dash head base
-        b0 = max(0.0, h0 - DASH_BODY + LINE_W / 2)   # body start (round cap adds LINE_W/2)
-        body = path[(seg_len >= b0) & (seg_len <= h0)]
-        if len(body) >= 2:
-            pts = np.round(body * SS * 16).astype(np.int32)  # 4 fractional bits
-            cv2.polylines(big, [pts.reshape(-1, 1, 2)], False, 255, int(round(LINE_W * SS)), cv2.LINE_8, shift=4)
-        i = min(np.searchsorted(seg_len, tip_s), len(path) - 1)
-        p_tip = path[i]
-        dd = path[i] - path[np.searchsorted(seg_len, tip_s - 1.5)]   # local tangent at the tip
-        dd /= np.linalg.norm(dd)
-        p_base = p_tip - dd * DASH_HEAD
-        nn = np.array([-dd[1], dd[0]])
-        tri = np.array([p_tip, p_base + nn * DASH_HW / 2, p_base - nn * DASH_HW / 2])
-        cv2.fillPoly(big, [np.round(tri * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
-        dash_heads.append({"s": float(tip_s), "tip": p_tip.round(2).tolist(), "dir": dd.round(4).tolist()})
-        tip_s -= period
-    mids = []
-    for ms in mid_s:  # intermediate arrowheads along the route
-        poly, md = head_at(path, ms)
-        cv2.fillPoly(big, [np.round(poly * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
-        mids.append({"s": float(ms), "frac": float(ms / seg_len[-1]), "tip": poly[0].round(2).tolist(), "dir": md.round(4).tolist()})
-    cv2.fillPoly(big, [np.round(head * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
+    slots, total = layout(path, accents)
+    dash_heads, mids = [], []
+    for s0, p0, dd, is_acc in slots:
+        if is_acc:
+            poly = dash_poly(p0, dd, MID_BODY, MID_HEAD, MID_W)
+            mids.append({"s": float(s0 + MID_BODY + MID_HEAD), "frac": float((s0 + MID_BODY + MID_HEAD) / total),
+                         "tip": poly[3].round(2).tolist(), "dir": dd.round(4).tolist()})
+        else:
+            poly = dash_poly(p0, dd, DASH_BODY, DASH_HEAD, DASH_HW)
+        big |= poly_mask(poly)
+        dash_heads.append({"s": float(s0 + DASH_BODY + DASH_HEAD), "tip": poly[3].round(2).tolist(), "dir": dd.round(4).tolist()})
+    big |= poly_mask(head)
     a = cv2.resize(big, (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
-    return a, head, d, dash_heads[::-1], mids
+    return a, head, d, dash_heads, mids
 
 
 layers = []
@@ -246,35 +299,28 @@ bld = cv2.morphologyEx(bld.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.
 # the arch is not exempt here: an intermediate head inside it would stick out of the narrow passage
 
 
-def head_mask(poly):
-    big = np.zeros((H * SS, W * SS), np.uint8)
-    cv2.fillPoly(big, [np.round(poly * SS * 16).astype(np.int32).reshape(-1, 1, 2)], 255, cv2.LINE_8, shift=4)
-    return cv2.resize(big, (W, H), interpolation=cv2.INTER_AREA) > 0
-
-
 def pick_mids(path, blocked, lo=0.30, hi=0.40):
+    """Tip positions of two accent dashes so that accents and the final head are 30-40 % of the route apart."""
     total = np.sum(np.linalg.norm(np.diff(path, axis=0), axis=1))
+    fit = {}
+
+    def ok(f):
+        if f not in fit:
+            r = accent_fits(path, f * total)
+            fit[f] = r is not None and not ((cv2.resize(poly_mask(dash_poly(r[0], r[1], MID_BODY, MID_HEAD, MID_W)),
+                                                        (W, H), interpolation=cv2.INTER_AREA) > 0) & blocked).any()
+        return fit[f]
     best = None
-    fr = np.arange(lo, hi + 0.0001, 0.005)
+    fr = np.round(np.arange(lo, hi + 0.0001, 0.005), 3)
     for f1 in fr:
         for g in fr:
-            f2 = f1 + g
+            f2 = round(f1 + g, 3)
             if not lo <= 1 - f2 <= hi:
                 continue
             score = abs(f1 - 1 / 3) + abs(g - 1 / 3) + abs(1 - f2 - 1 / 3)
-            if best is not None and score >= best[0]:
-                continue
-            good = True
-            for f in (f1, f2):
-                poly, d = head_at(path, f * total)
-                _, d0 = head_at(path, f * total - HEAD_LEN)
-                if d @ d0 < np.cos(np.radians(3)) or (head_mask(poly) & blocked).any():
-                    good = False
-                    break
-            if good:
+            if (best is None or score < best[0]) and ok(f1) and ok(f2):
                 best = (score, [f1 * total, f2 * total])
     if best is None:
-        # no free spot inside 30-40 %: widen the window step by step (red: courtyard wall at 60-70 %)
         assert hi - lo < 0.2, "no valid positions for intermediate arrowheads"
         return pick_mids(path, blocked, lo - 0.01, hi + 0.01)
     return best[1]
@@ -287,8 +333,8 @@ for i, (name, path, col) in enumerate(ROUTES):
     for on, (_, _, oc) in zip(alphas, ROUTES):
         if oc != col:
             other |= alphas[on] > 0
-    mid_s = pick_mids(path, bld | other | text_m)
-    a, _, _, _, mids = draw_arrow(path, mid_s)
+    accents = pick_mids(path, bld | other | text_m)
+    a, _, _, _, mids = draw_arrow(path, accents)
     alphas[name] = a
     layers[i + 1] = (a, col)
     meta[name]["mid_heads"] = mids

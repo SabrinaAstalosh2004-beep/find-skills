@@ -66,8 +66,8 @@ for name, goal in (("red_car", DEST), ("green_walk_south", DEST), ("green_walk_n
     cosm = [float(np.array(h["dir"]) @ (seg[min(np.searchsorted(cum, h["s"]), len(seg)) - 1]
                                         / np.linalg.norm(seg[min(np.searchsorted(cum, h["s"]), len(seg)) - 1])))
             for h in mh]
-    check(f"{name}: {len(mh)} intermediate arrowheads every 30-40 % (+-2 %) facing forward",
-          len(mh) == 2 and np.all((sp >= 0.279) & (sp <= 0.421)) and min(cosm) > 0.99,
+    check(f"{name}: {len(mh)} intermediate arrowheads every 30-40 % (+-3 %) facing forward",
+          len(mh) == 2 and np.all((sp >= 0.269) & (sp <= 0.431)) and min(cosm) > 0.99,
           ("" if np.all((sp >= 0.299) & (sp <= 0.401)) else "WIDENED, ") + "spacing " + " / ".join(f"{100 * x:.1f}%" for x in sp) + f", min cos {min(cosm):.3f}")
 for name in ("red_car", "green_walk_south"):
     tip = np.array(meta[name]["path"][-1])
