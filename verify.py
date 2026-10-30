@@ -76,6 +76,12 @@ for k, name in (("red", "red"), ("green_s", "green south"), ("green_n", "green n
     check(f"{name}: no building crossing outside the arch", hit.sum() == 0,
           f"{hit.sum()} px" + (f" at x{xs.min()}-{xs.max()} y{ys.min()}-{ys.max()}" if hit.sum() else ""))
 
+# red on the prospekt runs in the middle of its lane (white dashed line .. blue dotted line)
+LANE_R = {1200: (214.5, 237.5), 1260: (210.5, 236), 1300: (207.5, 235.5), 1380: (202.5, 233), 1420: (201.5, 233), 1480: (199.5, 231)}
+pr = np.array(meta["red_car"]["path"])
+devr = [abs(np.interp(y, pr[::-1, 1], pr[::-1, 0]) - (a + b) / 2) for y, (a, b) in LANE_R.items()]
+check("red in the middle of its lane on the prospekt", max(devr) < 1.5, "deviation " + ", ".join(f"{d:.1f}" for d in devr) + " px")
+
 # 5. red and green never overlap; label overlaps nothing drawn
 green = (L["green_s"] > 0) | (L["green_n"] > 0)
 check("red/green overlap", np.sum((L["red"] > 0) & green) == 0, f"{np.sum((L['red'] > 0) & green)} px")
@@ -87,8 +93,15 @@ check("label does not touch the arrows", np.sum((L["text"] > 0) & routes) == 0)
 # 6. label position
 q = np.array(meta["label"]["quad"])
 ctr = q.mean(0)
-MARK_C, MARK_ANG = np.array([222.0, 1144.0]), 4.1  # centre/angle of the mark on image 2 (mapped)
-check("label centred on the mark", np.hypot(*(ctr - MARK_C)) < 25, f"label centre {ctr.round(1).tolist()}, mark {MARK_C.tolist()}")
+MARK_ANG = 4.1  # angle of the mark on image 2 (mapped)
+# 2nd southbound lane: between the two white dashed lines west of the dividing strip
+LANE2 = {1000: (184, 198), 1100: (172, 186), 1150: (169, 182), 1200: (162, 176.5), 1300: (153, 167)}
+def lab_c(y):  # midpoint of the letters' ink across the road at height y
+    xs = np.nonzero((L["text"][y - 6:y + 7] > 0.3).any(0))[0]
+    return (xs.min() + xs.max()) / 2
+dev = [abs(lab_c(y) - (a + b) / 2) for y, (a, b) in LANE2.items()]
+check("label centred on the 2nd lane", max(dev) < 3.5, "deviation " + ", ".join(f"{d:.1f}" for d in dev) + " px")
+check("label still at the mark along the road", abs(ctr[1] - 1149) < 5, f"centre y {ctr[1]:.1f}")
 check("label parallel to the road", abs(meta["label"]["angle_deg_from_vertical"] - MARK_ANG) < 2,
       f"{meta['label']['angle_deg_from_vertical']:.1f} deg vs mark {MARK_ANG} deg / dividing strip 4.9 deg")
 t = L["text"] > 0

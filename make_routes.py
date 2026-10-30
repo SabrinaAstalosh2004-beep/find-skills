@@ -28,14 +28,14 @@ orig = np.asarray(base).copy()
 RED = (227, 38, 43)
 GREEN = (30, 158, 58)
 TEXT = (36, 37, 40)
-LINE_W = 4.0        # stroke width, px
+LINE_W = 4.4        # stroke width, px (+10 %)
 HEAD_LEN = 16.0     # arrowhead length, px
 DASH_BODY = 9.0     # dash stroke length, px
 DASH_HEAD = 6.0     # length of the small pointer on every dash, px
-DASH_HW = 6.0       # its base width: stays inside the 2 px gap to the parallel route
+DASH_HW = 6.0       # its base width
 DASH_GAP = 6.0      # gap between dashes, px
 HEAD_W = 14.0       # arrowhead base width, px
-OFF = 3.5           # half-distance between parallel red/green centre lines
+OFF = 5.2           # half-distance between parallel red/green centre lines: line gap 2*OFF-LINE_W = 6 px
 
 
 # ---------- geometry helpers ----------
@@ -99,14 +99,14 @@ def fillet_path(pts, radii, step=0.25):
 # ---------- route geometry ----------
 EAST, NORTH = (1, 0), (0, -1)
 L_ARCH = line_pd((246, 1179), EAST)                 # through the arch
-L_YARD = line_pd((346.5, 1179), NORTH)               # courtyard driveway, vertical
-L_DIAG = line_pd((460, 955.5), (1, -0.385))          # courtyard driveway, diagonal (+3 px south: clear of facade)
-L_TOP = line_pd((600, 915), EAST)                    # driveway in front of the museum (+2 px: clear of the notch)
+L_YARD = line_pd((348, 1179), NORTH)                 # courtyard driveway, vertical (+1.5 px east: room for the 6 px gap)
+L_DIAG = line_pd((460, 957), (1, -0.385))            # courtyard driveway, diagonal (+4.5 px south: clear of facade)
+L_TOP = line_pd((600, 916.5), EAST)                  # driveway in front of the museum (+3.5 px: clear of the notch)
 TIP_Y = 855                                          # arrow tips, just short of the facade
 
 
-def curb_lane(y):  # red lane on the northbound carriageway, parallel to the east curb
-    return 235.0 - 0.024 * (y - 1200)
+def curb_lane(y):  # middle of the northbound lane between the white dashed line and the blue dotted line
+    return 226.0 - 0.0382 * (y - 1200)
 
 
 def shared(side):
@@ -117,13 +117,13 @@ def shared(side):
 
 
 R_ARCH_TURN, R_DIAG, R_TOP = 10, 12, 20
-red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(610, 915 - OFF), (610, TIP_Y)]
+red_v = [(curb_lane(1480), 1480), None] + shared(-1) + [(610, 916.5 - OFF), (610, TIP_Y)]
 red_lane = line_pd((curb_lane(1480), 1480), (curb_lane(1176) - curb_lane(1480), 1176 - 1480))
 red_v[1] = meet(red_lane, offset(L_ARCH, -OFF))
 red = fillet_path(red_v, [12, R_ARCH_TURN - OFF, R_DIAG + OFF, R_TOP - OFF, 8])
 
 walk_lane = line_pd((248.5, 1385), (4, -203))           # middle of the east sidewalk (narrows to the south)
-green_s_v = [(248.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(626, 915 + OFF), (626, TIP_Y)]
+green_s_v = [(248.5, 1385), meet(walk_lane, offset(L_ARCH, OFF))] + shared(+1) + [(626, 916.5 + OFF), (626, TIP_Y)]
 green_s = fillet_path(green_s_v, [8, R_ARCH_TURN + OFF, R_DIAG - OFF, R_TOP + OFF, 8])
 
 green_n = fillet_path([(252, 985), (252, 1167)], [])
@@ -205,7 +205,7 @@ def median_c(y):  # centre of the light dividing strip of Izmailovsky prospekt
 
 
 LABEL_Y = 1150.0                       # centre of the mark on image 2 (mapped), clear of the traffic light
-BASE_OFF = 16.5                        # baseline east of strip centre: clear of lane arrow at x>=218
+BASE_OFF = -17.5                       # baseline so that the cap-height centre is on the 2nd southbound lane (x~175.5 at y 1150)
 target = np.array([median_c(LABEL_Y) + BASE_OFF, LABEL_Y])
 u = np.array([0.0861, -1.0]); u /= np.linalg.norm(u)   # reading direction: along the road, northwards
 v = np.array([-u[1], u[0]])                             # glyph "down" (towards baseline) = east
