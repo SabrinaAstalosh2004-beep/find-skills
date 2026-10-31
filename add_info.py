@@ -1,8 +1,8 @@
 """Add the metro walking-time caption and the two information blocks to the approved map.
 
   * "(10 минут пешком)" in small type next to the metro logo (overlay, everything else unchanged);
-  * blocks "КАК ДОБРАТЬСЯ" and "ВХОД В ЗДАНИЕ" on a strip appended below the screenshot, so that no part
-    of the map is covered: the original 954x2124 pixels stay as they are (apart from the caption).
+  * block "КАК ДОБРАТЬСЯ" over the lower part of the map, its top level with the end of the yellow metro
+    arrow; block "ВХОД В ЗДАНИЕ" right below it on a strip appended below the screenshot.
 Texts are taken verbatim from the request; codes are set in bold for readability.
 """
 import json
@@ -29,15 +29,18 @@ BLUE = (33, 110, 224)
 
 # ---------- 1. metro caption ----------
 METRO_TEXT = "(10 минут пешком)"
-METRO_POS = (760.0, 1440.0)       # left edge, cap-height centre: right of the logo ring, below "Ротонда"
-mfont = ImageFont.truetype(F.format("SemiBold"), 15 * SS)
+METRO_LINES = ["(10 минут", "пешком)"]  # 30 px does not fit in one line between the logo and the image edge
+METRO_POS = (760.0, 1450.0)       # left edge, centre of the two lines: right of the logo ring, below "Ротонда"
+mfont = ImageFont.truetype(F.format("SemiBold"), 30 * SS)   # 2x the first version (15 px)
 mcap = mfont.getbbox("Н")[3] - mfont.getbbox("Н")[1]
 masc, _ = mfont.getmetrics()
-pos = (METRO_POS[0] * SS, METRO_POS[1] * SS - mcap / 2 - (masc - mcap))
+mline = round(mcap * 1.5)
 txt = Image.new("L", (W * SS, H * SS), 0)
 halo = Image.new("L", (W * SS, H * SS), 0)
-ImageDraw.Draw(txt).text(pos, METRO_TEXT, font=mfont, fill=255)
-ImageDraw.Draw(halo).text(pos, METRO_TEXT, font=mfont, fill=255, stroke_width=2 * SS, stroke_fill=255)
+for i, s_ in enumerate(METRO_LINES):
+    pos = (METRO_POS[0] * SS, METRO_POS[1] * SS - (mcap + mline) / 2 + i * mline - (masc - mcap))
+    ImageDraw.Draw(txt).text(pos, s_, font=mfont, fill=255)
+    ImageDraw.Draw(halo).text(pos, s_, font=mfont, fill=255, stroke_width=3 * SS, stroke_fill=255)
 a_t = cv2.resize(np.asarray(txt), (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 a_h = cv2.resize(np.asarray(halo), (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 mp = orig.astype(np.float32)
@@ -141,13 +144,18 @@ def layout(block):
 
 
 laid = [layout(b) for b in BLOCKS]
-strip_h = MARGIN + sum(h for _, h in laid) + GAP * (len(laid) - 1) + MARGIN
-canvas = Image.new("RGB", (W, H + strip_h), BG)
+# "КАК ДОБРАТЬСЯ" lies on the map, its top at the level where the yellow metro arrow ends;
+# "ВХОД В ЗДАНИЕ" follows it on the strip appended below the map.
+ARROW_END_Y = 1628                  # lowest drawn pixel of the yellow arrow incl. its contour (measured)
+tops = [ARROW_END_Y + 3]
+for _, h in laid[:-1]:
+    tops.append(max(tops[-1] + h + GAP, H + MARGIN))
+total_h = tops[-1] + laid[-1][1] + MARGIN
+canvas = Image.new("RGB", (W, total_h), BG)
 canvas.paste(Image.fromarray(mp), (0, 0))
 d = ImageDraw.Draw(canvas)
-y0 = H + MARGIN
 cards = []
-for (ops, h), b in zip(laid, BLOCKS):
+for (ops, h), b, y0 in zip(laid, BLOCKS, tops):
     box = [MARGIN, y0, W - MARGIN, y0 + h]
     d.rounded_rectangle(box, radius=RADIUS, fill=WHITE, outline=CARD_EDGE, width=2)
     d.rounded_rectangle([MARGIN, y0, MARGIN + 8, y0 + h], radius=4, fill=b["accent"])
@@ -162,7 +170,6 @@ for (ops, h), b in zip(laid, BLOCKS):
             _, x, y, w, hh, col = op
             d.rounded_rectangle([MARGIN + x, y0 + y, MARGIN + x + w, y0 + y + hh], radius=10, fill=col)
     cards.append(box)
-    y0 += h + GAP
 
 canvas.save(OUT, optimize=True)
 json.dump({"metro_caption": METRO_TEXT, "caption_bbox": caption_bbox, "map_height": H, "cards": cards,

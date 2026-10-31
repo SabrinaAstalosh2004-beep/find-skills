@@ -23,17 +23,26 @@ def check(name, cond, info=""):
 
 
 H, W = a.shape[:2]
-check("width kept, blocks appended below the map", r.shape[1] == W and r.shape[0] > H, f"{W}x{H} -> {r.shape[1]}x{r.shape[0]}")
-top = r[:H]
-diff = np.any(top != a, -1)
-check("map pixels unchanged except the metro caption", not (diff & ~mask).any(), f"changed {diff.sum()} px")
+check("width kept, strip appended below the map", r.shape[1] == W and r.shape[0] > H, f"{W}x{H} -> {r.shape[1]}x{r.shape[0]}")
+card1_top = meta["cards"][0][1]
+top = r[:card1_top]
+diff = np.any(top != a[:card1_top], -1)
+check("map above the first block unchanged except the metro caption", not (diff & ~mask[:card1_top]).any(),
+      f"changed {diff.sum()} px")
 added = np.any(a != o, -1)
 check("caption covers no route, sign, logo or arrow", not (mask & added).any(), f"{(mask & added).sum()} px")
 ink = cv2.dilate(((o.max(-1) < 175) & (np.abs(o[..., 0] - o[..., 2]) < 25)).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
 check("caption covers no map text or icon", not (mask & ink).any(), f"{(mask & ink).sum()} px")
 cb = meta["caption_bbox"]
 check("caption next to the metro logo (logo box 618-753, 1347-1510)", 753 < cb[0] < 775 and 1347 < cb[1] and cb[3] < 1510, f"caption box {cb}")
-check("blocks lie entirely below the map", all(c[1] >= H for c in meta["cards"]), f"cards {meta['cards']}")
+check("caption fits inside the image", cb[2] < W, f"right edge {cb[2]} < {W}")
+ys, xs = np.nonzero(np.any(a != o, -1)[1500:1700, 680:900])
+arrow_end = 1500 + ys.max()
+check("'КАК ДОБРАТЬСЯ' starts level with the end of the yellow metro arrow", 0 < card1_top - arrow_end <= 4,
+      f"arrow ends at y {arrow_end}, block top {card1_top}")
+c1, c2 = meta["cards"]
+check("'ВХОД В ЗДАНИЕ' right below the first block, on the appended strip", c2[1] > c1[3] and c2[1] >= H,
+      f"cards {meta['cards']}")
 
 src = open(sys.argv[0].replace("check_info.py", "add_info.py"), encoding="utf-8").read()
 EXPECTED = [
