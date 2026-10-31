@@ -30,7 +30,9 @@ check("no route, sign or earlier label covered", not (mask & added).any(), f"{(m
 dark = (o.max(-1) < 140)  # map text and icons (dark ink)
 check("no map text or icon covered", not (mask & cv2.dilate(dark.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)).any())
 
-marks = np.abs(s - a).max(-1) > 70
+# hand marks are yellow; later approved changes (e.g. resized signs) also differ from an older screenshot
+marks = (np.abs(s - a).max(-1) > 70) & (s[..., 0] > 190) & (s[..., 1] > 180) & (s[..., 2] < 110)
+marks = cv2.morphologyEx(marks.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)) > 0
 n, lab, st, cen = cv2.connectedComponentsWithStats(marks.astype(np.uint8))
 big = sorted([(st[i], cen[i], i) for i in range(1, n) if st[i][4] > 10], key=lambda b: b[0][1])
 check("screenshot = approved map + 2 yellow marks", len(big) == 2)

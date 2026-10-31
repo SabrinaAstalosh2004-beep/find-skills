@@ -61,8 +61,9 @@ pin_edge = fill(pin_poly(PIN_R + OUTLINE, PIN_TIP + np.array([0, OUTLINE * 1.6])
 pin_dot = circle(PIN_C, PIN_R * 0.38)
 
 # ---------- open-arch sign (replaces the yellow arrow) ----------
-SIGN_C = np.array([338.0, 1222.0])   # inside the yellow arrow's box, clear of "120" and the route dashes
-SIGN_R = 11.0
+SIGN_C = np.array([350.0, 1226.0])   # at the yellow arrow, clear of "120" and the route dashes
+SIGN_R = 22.0                        # 2x the first version (11)
+GS = SIGN_R / 11.0                   # glyph scale
 sign_disc = circle(SIGN_C, SIGN_R)
 sign_edge = circle(SIGN_C, SIGN_R + OUTLINE)
 
@@ -76,8 +77,8 @@ def arch(cx, base_y, half_w, h):
     return pts
 
 
-gx, gb = SIGN_C[0], SIGN_C[1] + 6.0  # glyph: white arch frame with an open passage
-glyph = fill(arch(gx, gb, 6.5, 12.5)) & ~fill(arch(gx, gb + 0.01, 3.2, 8.0))
+gx, gb = SIGN_C[0], SIGN_C[1] + 6.0 * GS  # glyph: white arch frame with an open passage
+glyph = fill(arch(gx, gb, 6.5 * GS, 12.5 * GS)) & ~fill(arch(gx, gb + 0.01, 3.2 * GS, 8.0 * GS))
 
 # caption
 FONT = "/usr/share/fonts/opentype/inter/Inter-SemiBold.otf"

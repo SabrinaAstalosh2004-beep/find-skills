@@ -54,9 +54,9 @@ check("geotag replaces the blue check mark (tip at its vertex)", bx <= tip[0] <=
 check("geotag stands right above the two final route arrows (museum entrance)",
       not routes[int(tip[1]) + 1:int(tip[1]) + 22, int(tip[0]) - 4:int(tip[0]) + 5].any() and routes[850:856, 600:645].any())
 sc, sr = np.array(meta["sign_centre"]), meta["sign_r"]
-check("arch sign replaces the yellow arrow", yx <= sc[0] - sr and sc[0] + sr <= yx + yw and yy <= sc[1] - sr <= yy + yh,
+check("arch sign replaces the yellow arrow", yx <= sc[0] <= yx + yw and yy <= sc[1] <= yy + yh,
       f"sign centre {sc.tolist()}, arrow box x{yx}-{yx + yw} y{yy}-{yy + yh}")
-check("arch sign is just below the arch passage (y 1175-1182, x 258-337)", abs(sc[0] - 337) < 15 and 0 < sc[1] - sr - 1182 < 40)
+check("arch sign is just below the arch passage (y 1175-1182, x 258-337)", abs(sc[0] - 337) < 15 and 0 < sc[1] - sr - 1182 < 40, f"sign top {sc[1] - sr}")
 cb = meta["caption_bbox"]
 check("caption next to the arch sign", 0 <= cb[0] - (sc[0] + sr) < 10 and cb[1] <= sc[1] <= cb[3],
       f"caption box {cb}, sign centre {sc.tolist()}")
