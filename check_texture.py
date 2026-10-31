@@ -24,19 +24,20 @@ same = np.all(base[untouched] == tex[untouched])
 check("labels, icons, markings and other excluded pixels unchanged", same, f"{untouched.sum()} px kept")
 
 
-def boundaries(img):
-    """Region outlines: strong edges of the image smoothed beyond the texture grain."""
+def grad(img):
+    """Gradient of the image smoothed beyond the texture grain (sigma 4 px at 3x)."""
     g = cv2.GaussianBlur(img.astype(np.float32), (0, 0), 4).mean(-1)
-    gx, gy = cv2.Sobel(g, cv2.CV_32F, 1, 0), cv2.Sobel(g, cv2.CV_32F, 0, 1)
-    mag = np.hypot(gx, gy)
-    return mag > np.percentile(mag, 92)
+    return cv2.Sobel(g, cv2.CV_32F, 1, 0), cv2.Sobel(g, cv2.CV_32F, 0, 1)
 
 
-bb, tb = boundaries(base), boundaries(tex)
-dist_to_tex = cv2.distanceTransform((~tb).astype(np.uint8), cv2.DIST_L2, 5)
-d = dist_to_tex[bb]
-check("outlines stay in place (map boundaries vs textured boundaries)", np.percentile(d, 90) <= 3.0,
-      f"median {np.median(d):.1f} px, 90th percentile {np.percentile(d, 90):.1f} px at 3x")
+bx, by = grad(base)
+tx, ty = grad(tex)
+bm = np.hypot(bx, by)
+outline = (bm > np.percentile(bm, 92)) & ~untouched          # region outlines of the map that were retextured
+cosang = (bx * tx + by * ty)[outline] / (bm[outline] * np.hypot(tx, ty)[outline] + 1e-6)
+kept = (cosang > 0.7) & (np.hypot(tx, ty)[outline] > 0.3 * bm[outline])
+check("outlines stay in place: same edge, same direction at every map outline", kept.mean() > 0.95,
+      f"{100 * kept.mean():.1f} % of {outline.sum()} outline px keep an edge in the same direction")
 
 H = base.shape[0]
 over = np.abs(fin[:H] - base).max(-1) > 60          # pixels where my overlays clearly cover the map
