@@ -45,7 +45,7 @@ def down(big):
 
 # ---------- destination geotag (replaces the blue check mark) ----------
 PIN_TIP = np.array([619.0, 829.0])   # lowest point (vertex) of the blue check mark
-PIN_R = 11.0
+PIN_R = 22.0                          # 2x the first version (11)
 PIN_C = PIN_TIP - np.array([0.0, 2.3 * PIN_R])
 
 
