@@ -1,4 +1,4 @@
-"""Checks for add_metro.py: only the metro sign and its arrow were added to the approved map."""
+"""Checks for add_metro.py: only the metro logo and its arrow were added to the approved map."""
 import json
 import sys
 
@@ -38,7 +38,7 @@ check("screenshot = approved map + 2 yellow marks", len(big) == 2)
 x, y, w, h, _ = cb
 ring_c = np.array([x + w / 2, y + h / 2])
 sc = np.array(meta["sign_centre"])
-check("metro sign centred on the yellow 'M' circle", np.hypot(*(sc - ring_c)) < 15,
+check("metro logo ring centred on the yellow 'M' circle", np.hypot(*(sc - ring_c)) < 15,
       f"sign {sc.tolist()}, circle box centre {ring_c.round(1).tolist()}")
 ys, xs = np.nonzero(lab == ai)
 pts = np.c_[xs, ys]
@@ -49,6 +49,9 @@ d1 = (tip - start) / np.linalg.norm(tip - start)
 d2 = (tip_drawn - start) / np.linalg.norm(tip_drawn - start)
 check("arrow follows the drawn arrow", np.hypot(*(tip - tip_drawn)) < 10 and d1 @ d2 > 0.995,
       f"tip {tip.tolist()} vs drawn {tip_drawn.tolist()}, angle diff {np.degrees(np.arccos(min(1, d1 @ d2))):.1f} deg")
+lb = meta["logo_bbox"]
+check("logo 3x the previous sign (ring outer diameter 135 px vs 45 px)", abs((lb[2] - lb[0]) - 135) <= 2,
+      f"logo box {lb}, width {lb[2] - lb[0]} px")
 for b in (cb, ab):
     x, y, w, h, _ = b
     yl = r[y:y + h, x:x + w]
