@@ -52,8 +52,9 @@ check("arrow follows the drawn arrow", np.hypot(*(tip - tip_drawn)) < 10 and d1 
 lb = meta["logo_bbox"]
 check("logo 3x the previous sign (ring outer diameter 135 px vs 45 px)", abs((lb[2] - lb[0]) - 135) <= 2,
       f"logo box {lb}, width {lb[2] - lb[0]} px")
-for b in (cb, ab):
+for b in (cb, ab):  # the new arrow is yellow itself: look for hand-drawn yellow outside the drawn elements
     x, y, w, h, _ = b
     yl = r[y:y + h, x:x + w]
-    check("yellow mark gone", not ((yl[..., 0] > 200) & (yl[..., 1] > 200) & (yl[..., 2] < 90)).any())
+    hand = (yl[..., 0] > 200) & (yl[..., 1] > 200) & (yl[..., 2] < 90) & ~mask[y:y + h, x:x + w]
+    check("hand-drawn yellow mark gone", not hand.any())
 print("\nALL CHECKS PASSED" if ok else "\nSOME CHECKS FAILED")

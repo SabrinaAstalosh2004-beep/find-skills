@@ -3,7 +3,7 @@
 Approval screenshot marks, replaced here:
   * yellow "M" in a circle -> metro logo as supplied by the user (Moscow Metro, 2014: red pin-shaped
     ring with a serif "М"), traced from the supplied image into vector form, ring centred on the mark;
-  * yellow arrow           -> straight blue arrow along the drawn one, tip where the drawn tip is.
+  * yellow arrow           -> straight yellow arrow along the drawn one, tip where the drawn tip is.
 The approved map is loaded unchanged; the new elements are drawn on transparent layers
 (4x supersampled) and composited. Every other pixel stays identical.
 """
@@ -21,7 +21,8 @@ base = Image.open(SRC).convert("RGB")
 W, H = base.size
 orig = np.asarray(base).copy()
 
-BLUE = (0, 114, 188)
+YELLOW = (255, 204, 0)
+YELLOW_EDGE = (190, 140, 0)
 LOGO_RED = (199, 55, 54)
 WHITE = (255, 255, 255)
 
@@ -37,8 +38,8 @@ SIGN_OUTER_D = 3 * 45.0              # 3x the previous sign (disc 40 px + rim)
 K = SIGN_OUTER_D / 2 / (L_R + L_W / 2)
 ARROW_FROM = np.array([695.0, 1508.0])  # start and tip of the yellow arrow
 ARROW_TO = np.array([860.0, 1627.0])
-LINE_W, HEAD_LEN, HEAD_W = 5.0, 18.0, 16.0
-EDGE = 1.5  # thin white edge around the arrow, as around the other signs
+LINE_W, HEAD_LEN, HEAD_W = 15.0, 54.0, 48.0  # 3x the first version (5, 18, 16)
+EDGE = 1.5  # thin darker contour: keeps the yellow arrow readable on the light map
 
 
 def poly_mask(poly):
@@ -94,7 +95,7 @@ logo_edge = cv2.dilate(logo, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(2
 # direction arrow
 a_edge, a_body = poly_mask(arrow(EDGE)), poly_mask(arrow(0.0))
 
-layers = [(down(a_edge), WHITE), (down(a_body), BLUE), (down(logo_edge), WHITE), (down(logo), LOGO_RED)]
+layers = [(down(a_edge), YELLOW_EDGE), (down(a_body), YELLOW), (down(logo_edge), WHITE), (down(logo), LOGO_RED)]
 out = orig.astype(np.float32)
 for a, col in layers:
     out = out * (1 - a[..., None]) + np.array(col, np.float32) * a[..., None]
