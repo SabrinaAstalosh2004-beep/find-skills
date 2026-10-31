@@ -25,7 +25,7 @@ LABELS = [
     # text lines, centre (= centre of the yellow mark), font, size, colour, halo
     {"name": "garnovsky", "lines": ["Гарновский сквер"], "centre": (490.0, 1028.0),
      "font": "/usr/share/fonts/opentype/inter/Inter-SemiBold.otf", "size": 18, "colour": (88, 128, 52), "halo": 2.0},
-    {"name": "sports", "lines": ["Спортивная", "площадка"], "centre": (549.0, 1239.0),
+    {"name": "sports", "lines": ["Спортивная", "площадка"], "centre": (570.0, 1239.0),  # mark x 549 + 15 % of the field width (140 px)
      "font": "/usr/share/fonts/opentype/inter/Inter-Medium.otf", "size": 12, "colour": (66, 84, 60), "halo": 1.5},
 ]
 

@@ -43,8 +43,9 @@ for (box, c), key in zip(big, ("garnovsky", "sports")):
     m = meta[key]
     b = m["ink_bbox"]
     centre = np.array([(b[0] + b[2]) / 2, (b[1] + b[3]) / 2])
-    check(f"'{m['text']}' centred on its yellow mark", np.hypot(*(centre - c)) < 4,
-          f"label centre {centre.round(1).tolist()}, mark centre {c.round(1).tolist()}")
+    want = c + ([0.15 * 140, 0] if key == "sports" else [0, 0])  # sports label: moved right by 15 % of the field
+    check(f"'{m['text']}' at its yellow mark" + (" + 15 % of the field to the right" if key == "sports" else ""),
+          np.hypot(*(centre - want)) < 4, f"label centre {centre.round(1).tolist()}, target {want.round(1).tolist()}")
     yl = r[y:y + h, x:x + w]
     check(f"yellow mark under '{m['text']}' gone", not ((yl[..., 0] > 200) & (yl[..., 1] > 200) & (yl[..., 2] < 90)).any())
 
