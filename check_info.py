@@ -35,7 +35,11 @@ check("caption covers no route, sign, logo or arrow", not (mask & drawn).any(), 
 ink = cv2.dilate(((a.max(-1) < 175) & (np.abs(a[..., 0] - a[..., 2]) < 25)).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
 check("caption covers no map text or icon", not (mask & ink).any(), f"{(mask & ink).sum()} px")
 cb = meta["caption_bbox"]
-check("caption next to the metro logo (logo box 618-753, 1347-1510)", 753 < cb[0] < 775 and 1347 < cb[1] and cb[3] < 1510, f"caption box {cb}")
+logo = (np.abs(a[..., 0] - 199) < 12) & (np.abs(a[..., 1] - 55) < 12) & (np.abs(a[..., 2] - 54) < 12)
+ly, lx = np.nonzero(logo)
+lb = [lx.min(), ly.min(), lx.max(), ly.max()]
+check("caption next to the metro logo", 0 < cb[0] - lb[2] < 25 and lb[1] < cb[1] and cb[3] < lb[3],
+      f"caption box {cb}, logo box {[int(v) for v in lb]}")
 check("caption fits inside the image", cb[2] < W, f"right edge {cb[2]} < {W}")
 yel = (a[..., 0] > 150) & (a[..., 2] < 80) & (a[..., 0] - a[..., 2] > 120)   # the yellow arrow and its contour
 ys, xs = np.nonzero(yel[1400:1700, 680:900])
@@ -43,7 +47,7 @@ arrow_end = 1400 + ys.max()
 check("'КАК ДОБРАТЬСЯ' starts level with the end of the yellow metro arrow", 0 < card1_top - arrow_end <= 4,
       f"arrow ends at y {arrow_end}, block top {card1_top}")
 c1, c2 = meta["cards"]
-check("'ВХОД В ЗДАНИЕ' right below the first block, on the appended strip", c2[1] > c1[3] and c2[1] >= H,
+check("'ВХОД В ЗДАНИЕ' right below the first block", 0 < c2[1] - c1[3] <= 20,
       f"cards {meta['cards']}")
 
 src = open(sys.argv[0].replace("check_info.py", "add_info.py"), encoding="utf-8").read()

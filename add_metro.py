@@ -26,7 +26,7 @@ YELLOW_EDGE = (190, 140, 0)
 LOGO_RED = (199, 55, 54)
 WHITE = (255, 255, 255)
 
-MOVE_UP = 42.0                       # whole metro group raised by 15 % of its height (logo top 1347 .. arrow tip 1628)
+MOVE_UP = 104.0                      # whole metro group raised so the arrow tip is level with the bottom of the car icon (y 1523)
 SIGN_C = np.array([686.0, 1415.0 - MOVE_UP])  # centre of the yellow circle = centre of the logo ring
 # Logo geometry traced from the supplied image (pixels of that image, ring centre at the origin).
 L_R, L_W = 343.6, 62.0               # ring centre-line radius and stroke width
