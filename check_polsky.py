@@ -24,10 +24,11 @@ diff = np.any(r != a, -1)
 check("approved map unchanged outside the old/new park label", not (diff & ~mask).any(), f"changed {diff.sum()} px")
 added = np.any(a != o, -1)
 check("no route, sign or earlier caption touched", not (mask & added).any(), f"{(mask & added).sum()} px")
-check("new label 'Польский сад' about half the old size", 0.4 < meta["new_cap_px"] / (meta["old_cap_px"] * 0.72) < 0.6,
+check("new label 'Польский сад' half the old size + 20 %", 0.5 < meta["new_cap_px"] / (meta["old_cap_px"] * 0.72) < 0.7,
       f"cap {meta['new_cap_px']} px vs old letters {meta['old_cap_px']} px (cap ~{meta['old_cap_px'] * 0.72:.0f})")
 b = meta["new_bbox"]
-check("new label starts where the old one started", abs(b[0] - meta["old_left"]) <= 2, f"x {b[0]} vs {meta['old_left']}")
+check("new label moved right by 20 % of its width", abs(b[0] - meta["old_left"] - meta["shift_px"]) <= 2,
+      f"x {b[0]} vs old {meta['old_left']} + {meta['shift_px']}")
 reg = r[1168:1216, 690:938]
 lum = reg.mean(-1)
 green = reg[..., 1] - (reg[..., 0] + reg[..., 2]) / 2 > 4

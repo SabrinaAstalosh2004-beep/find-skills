@@ -2,7 +2,8 @@
 
 The old letters (including the faint "ад" under the zoom button) are found as pixels darker than their
 local background, restored column by column from the map pixels just above and below them, and the
-full name is drawn at half the original size in the same colour, starting at the same left edge.
+full name is drawn in the same colour at half the original size plus 20 %, moved right and up by
+20 % of its width from where the old label started.
 Every other pixel stays identical.
 """
 import json
@@ -65,7 +66,10 @@ left, cy = X0 + xs.min(), Y0 + (ys.min() + ys.max()) / 2
 old_cap = ys.max() - ys.min()
 
 # ---------- new label, half size ----------
-font = ImageFont.truetype("/usr/share/fonts/opentype/inter/Inter-SemiBold.otf", 15 * SS)
+font = ImageFont.truetype("/usr/share/fonts/opentype/inter/Inter-SemiBold.otf", 18 * SS)   # half size (15) + 20 %
+SHIFT = 0.20 * font.getlength(TEXT) / SS     # moved right and up by 20 % of the label width
+old_left = left
+left, cy = left + SHIFT, cy - SHIFT
 cap = font.getbbox("П")[3] - font.getbbox("П")[1]
 asc, _ = font.getmetrics()
 pos = (left * SS - font.getbbox("П")[0], cy * SS - cap / 2 - (asc - cap))
@@ -83,8 +87,8 @@ mask = old | (a_h > 0)
 out[~mask] = orig[~mask]
 Image.fromarray(out).save(OUT, optimize=True)
 ys, xs = np.nonzero(a_t > 0.3)
-json.dump({"text": TEXT, "colour": COLOUR, "old_cap_px": int(old_cap), "new_cap_px": cap / SS,
-           "new_bbox": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())], "old_left": int(left)},
+json.dump({"text": TEXT, "colour": COLOUR, "shift_px": round(SHIFT, 1), "old_cap_px": int(old_cap), "new_cap_px": cap / SS,
+           "new_bbox": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())], "old_left": int(old_left)},
           open(OUT + ".polsky.json", "w"), ensure_ascii=False)
 np.save(OUT + ".polsky_old.npy", old)
 np.save(OUT + ".polsky_mask.npy", mask)
