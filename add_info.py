@@ -30,7 +30,7 @@ BLUE = (33, 110, 224)
 # ---------- 1. metro caption ----------
 METRO_TEXT = "(10 минут пешком)"
 METRO_LINES = ["(10 минут", "пешком)"]  # 30 px does not fit in one line between the logo and the image edge
-METRO_POS = (760.0, 1450.0)       # left edge, centre of the two lines: right of the logo ring, below "Ротонда"
+METRO_POS = (760.0, 1450.0 - 42.0)       # left edge, centre of the two lines: right of the logo ring, below "Ротонда"
 mfont = ImageFont.truetype(F.format("SemiBold"), 30 * SS)   # 2x the first version (15 px)
 mcap = mfont.getbbox("Н")[3] - mfont.getbbox("Н")[1]
 masc, _ = mfont.getmetrics()
@@ -146,7 +146,7 @@ def layout(block):
 laid = [layout(b) for b in BLOCKS]
 # "КАК ДОБРАТЬСЯ" lies on the map, its top at the level where the yellow metro arrow ends;
 # "ВХОД В ЗДАНИЕ" follows it on the strip appended below the map.
-ARROW_END_Y = 1628                  # lowest drawn pixel of the yellow arrow incl. its contour (measured)
+ARROW_END_Y = 1628 - 42             # lowest drawn pixel of the yellow arrow incl. its contour (measured), group raised 42 px
 tops = [ARROW_END_Y + 3]
 for _, h in laid[:-1]:
     tops.append(max(tops[-1] + h + GAP, H + MARGIN))

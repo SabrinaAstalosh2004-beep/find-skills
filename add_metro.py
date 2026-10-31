@@ -26,7 +26,8 @@ YELLOW_EDGE = (190, 140, 0)
 LOGO_RED = (199, 55, 54)
 WHITE = (255, 255, 255)
 
-SIGN_C = np.array([686.0, 1415.0])  # centre of the yellow circle = centre of the logo ring
+MOVE_UP = 42.0                       # whole metro group raised by 15 % of its height (logo top 1347 .. arrow tip 1628)
+SIGN_C = np.array([686.0, 1415.0 - MOVE_UP])  # centre of the yellow circle = centre of the logo ring
 # Logo geometry traced from the supplied image (pixels of that image, ring centre at the origin).
 L_R, L_W = 343.6, 62.0               # ring centre-line radius and stroke width
 L_END = 134.8                        # left end of the ring (round cap), degrees, y down
@@ -36,8 +37,8 @@ L_M = np.array([[447, 2094], [448, 2128], [585, 2128], [586, 2095], [567, 2094],
                 [845, 2094], [817, 2092], [725, 1859], [647, 1994], [567, 1859], [473, 2094]], float) - [644.5, 2016.6]
 SIGN_OUTER_D = 3 * 45.0              # 3x the previous sign (disc 40 px + rim)
 K = SIGN_OUTER_D / 2 / (L_R + L_W / 2)
-ARROW_FROM = np.array([695.0, 1508.0])  # start and tip of the yellow arrow
-ARROW_TO = np.array([860.0, 1627.0])
+ARROW_FROM = np.array([695.0, 1508.0 - MOVE_UP])  # start and tip of the yellow arrow
+ARROW_TO = np.array([860.0, 1627.0 - MOVE_UP])
 LINE_W, HEAD_LEN, HEAD_W = 15.0, 54.0, 48.0  # 3x the first version (5, 18, 16)
 EDGE = 1.5  # thin darker contour: keeps the yellow arrow readable on the light map
 
@@ -106,7 +107,7 @@ for a, _ in layers:
 out[~mask] = orig[~mask]
 Image.fromarray(out).save(OUT, optimize=True)
 ys, xs = np.nonzero(down(logo) > 0)
-json.dump({"sign_centre": SIGN_C.tolist(), "logo_outer_d": SIGN_OUTER_D, "logo_bbox": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())], "arrow_from": ARROW_FROM.tolist(),
+json.dump({"move_up": MOVE_UP, "sign_centre": SIGN_C.tolist(), "logo_outer_d": SIGN_OUTER_D, "logo_bbox": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())], "arrow_from": ARROW_FROM.tolist(),
            "arrow_to": ARROW_TO.tolist()}, open(OUT + ".metro.json", "w"))
 np.save(OUT + ".metro_mask.npy", mask)
 print("saved", OUT)

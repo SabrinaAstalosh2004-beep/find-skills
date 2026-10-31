@@ -40,16 +40,17 @@ check("screenshot = approved map + 2 yellow marks", len(big) == 2)
 x, y, w, h, _ = cb
 ring_c = np.array([x + w / 2, y + h / 2])
 sc = np.array(meta["sign_centre"])
-check("metro logo ring centred on the yellow 'M' circle", np.hypot(*(sc - ring_c)) < 15,
-      f"sign {sc.tolist()}, circle box centre {ring_c.round(1).tolist()}")
+up = np.array([0.0, meta.get("move_up", 0.0)])           # group raised on request (15 % of its height)
+check("metro logo ring at the yellow 'M' circle, raised by move_up", np.hypot(*(sc + up - ring_c)) < 15,
+      f"sign {sc.tolist()} (+{up[1]:.0f} up), circle box centre {ring_c.round(1).tolist()}")
 ys, xs = np.nonzero(lab == ai)
 pts = np.c_[xs, ys]
 start = np.array(meta["arrow_from"])
-tip_drawn = pts[np.argmax(((pts - start) ** 2).sum(1))]
+tip_drawn = pts[np.argmax(((pts - start - up) ** 2).sum(1))] - up
 tip = np.array(meta["arrow_to"])
 d1 = (tip - start) / np.linalg.norm(tip - start)
 d2 = (tip_drawn - start) / np.linalg.norm(tip_drawn - start)
-check("arrow follows the drawn arrow", np.hypot(*(tip - tip_drawn)) < 10 and d1 @ d2 > 0.995,
+check("arrow follows the drawn arrow (raised by move_up)", np.hypot(*(tip - tip_drawn)) < 10 and d1 @ d2 > 0.995,
       f"tip {tip.tolist()} vs drawn {tip_drawn.tolist()}, angle diff {np.degrees(np.arccos(min(1, d1 @ d2))):.1f} deg")
 lb = meta["logo_bbox"]
 check("logo 3x the previous sign (ring outer diameter 135 px vs 45 px)", abs((lb[2] - lb[0]) - 135) <= 2,

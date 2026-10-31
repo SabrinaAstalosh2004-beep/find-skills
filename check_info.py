@@ -29,15 +29,17 @@ top = r[:card1_top]
 diff = np.any(top != a[:card1_top], -1)
 check("map above the first block unchanged except the metro caption", not (diff & ~mask[:card1_top]).any(),
       f"changed {diff.sum()} px")
-added = np.any(a != o, -1)
-check("caption covers no route, sign, logo or arrow", not (mask & added).any(), f"{(mask & added).sum()} px")
-ink = cv2.dilate(((o.max(-1) < 175) & (np.abs(o[..., 0] - o[..., 2]) < 25)).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
+# judged on the approved image itself: earlier steps also removed map labels (e.g. "Ротонда")
+drawn = (a.max(-1) - a.min(-1) > 100)                      # routes, signs, logo, arrows: strongly saturated
+check("caption covers no route, sign, logo or arrow", not (mask & drawn).any(), f"{(mask & drawn).sum()} px")
+ink = cv2.dilate(((a.max(-1) < 175) & (np.abs(a[..., 0] - a[..., 2]) < 25)).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
 check("caption covers no map text or icon", not (mask & ink).any(), f"{(mask & ink).sum()} px")
 cb = meta["caption_bbox"]
 check("caption next to the metro logo (logo box 618-753, 1347-1510)", 753 < cb[0] < 775 and 1347 < cb[1] and cb[3] < 1510, f"caption box {cb}")
 check("caption fits inside the image", cb[2] < W, f"right edge {cb[2]} < {W}")
-ys, xs = np.nonzero(np.any(a != o, -1)[1500:1700, 680:900])
-arrow_end = 1500 + ys.max()
+yel = (a[..., 0] > 150) & (a[..., 2] < 80) & (a[..., 0] - a[..., 2] > 120)   # the yellow arrow and its contour
+ys, xs = np.nonzero(yel[1400:1700, 680:900])
+arrow_end = 1400 + ys.max()
 check("'КАК ДОБРАТЬСЯ' starts level with the end of the yellow metro arrow", 0 < card1_top - arrow_end <= 4,
       f"arrow ends at y {arrow_end}, block top {card1_top}")
 c1, c2 = meta["cards"]
