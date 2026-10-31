@@ -6,6 +6,7 @@
 Texts are taken verbatim from the request; codes are set in bold for readability.
 """
 import json
+import os
 import re
 import sys
 
@@ -17,7 +18,8 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 SS = 4
 
 base = Image.open(SRC).convert("RGB")
-W, H = base.size
+S = int(os.environ.get("SCALE", "1"))  # hi-res build: draw natively at S x the map resolution
+W, H = base.size[0] // S, base.size[1] // S
 orig = np.asarray(base).copy()
 
 F = "/usr/share/fonts/opentype/inter/Inter-{}.otf"
@@ -41,8 +43,8 @@ for i, s_ in enumerate(METRO_LINES):
     pos = (METRO_POS[0] * SS, METRO_POS[1] * SS - (mcap + mline) / 2 + i * mline - (masc - mcap))
     ImageDraw.Draw(txt).text(pos, s_, font=mfont, fill=255)
     ImageDraw.Draw(halo).text(pos, s_, font=mfont, fill=255, stroke_width=3 * SS, stroke_fill=255)
-a_t = cv2.resize(np.asarray(txt), (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
-a_h = cv2.resize(np.asarray(halo), (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
+a_t = cv2.resize(np.asarray(txt), (W * S, H * S), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
+a_h = cv2.resize(np.asarray(halo), (W * S, H * S), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 mp = orig.astype(np.float32)
 for a, col in ((a_h, WHITE), (a_t, DARK)):
     mp = mp * (1 - a[..., None]) + np.array(col, np.float32) * a[..., None]
@@ -50,7 +52,7 @@ mp = np.round(mp).astype(np.uint8)
 caption_mask = a_h > 0
 mp[~caption_mask] = orig[~caption_mask]
 ys, xs = np.nonzero(a_t > 0.3)
-caption_bbox = [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
+caption_bbox = [int(xs.min()) // S, int(ys.min()) // S, int(xs.max()) // S, int(ys.max()) // S]
 
 # ---------- 2. information blocks ----------
 BLOCKS = [
@@ -151,28 +153,45 @@ tops = [ARROW_END_Y + 3]
 for _, h in laid[:-1]:
     tops.append(tops[-1] + h + GAP)
 total_h = max(H, tops[-1] + laid[-1][1] + MARGIN)
-canvas = Image.new("RGB", (W, total_h), BG)
+canvas = Image.new("RGB", (W * S, total_h * S), BG)
 canvas.paste(Image.fromarray(mp), (0, 0))
 d = ImageDraw.Draw(canvas)
+_scaled = {}
+
+
+def sf(f):
+    """The same font at S x size: the layout is computed at 1x, drawing happens at S x."""
+    if S == 1:
+        return f
+    key = (f.path, f.size)
+    if key not in _scaled:
+        _scaled[key] = ImageFont.truetype(f.path, f.size * S)
+    return _scaled[key]
+
+
+def rr(box, radius, **kw):
+    d.rounded_rectangle([v * S for v in box], radius=radius * S, **kw)
+
+
 cards = []
 for (ops, h), b, y0 in zip(laid, BLOCKS, tops):
     box = [MARGIN, y0, W - MARGIN, y0 + h]
-    d.rounded_rectangle(box, radius=RADIUS, fill=WHITE, outline=CARD_EDGE, width=2)
-    d.rounded_rectangle([MARGIN, y0, MARGIN + 8, y0 + h], radius=4, fill=b["accent"])
+    rr(box, RADIUS, fill=WHITE, outline=CARD_EDGE, width=2 * S)
+    rr([MARGIN, y0, MARGIN + 8, y0 + h], 4, fill=b["accent"])
     for op in ops:
         if op[0] == "text":
             _, x, y, s, f, col = op
-            d.text((MARGIN + x, y0 + y), s, font=f, fill=col)
+            d.text(((MARGIN + x) * S, (y0 + y) * S), s, font=sf(f), fill=col)
         elif op[0] == "bar":
             _, x, y, w, hh, col = op
-            d.rounded_rectangle([MARGIN + x, y0 + y, MARGIN + x + w, y0 + y + hh], radius=3, fill=col)
+            rr([MARGIN + x, y0 + y, MARGIN + x + w, y0 + y + hh], 3, fill=col)
         elif op[0] == "round":
             _, x, y, w, hh, col = op
-            d.rounded_rectangle([MARGIN + x, y0 + y, MARGIN + x + w, y0 + y + hh], radius=10, fill=col)
+            rr([MARGIN + x, y0 + y, MARGIN + x + w, y0 + y + hh], 10, fill=col)
     cards.append(box)
 
 canvas.save(OUT, optimize=True)
 json.dump({"metro_caption": METRO_TEXT, "caption_bbox": caption_bbox, "map_height": H, "cards": cards,
-           "size": list(canvas.size)}, open(OUT + ".info.json", "w"), ensure_ascii=False)
+           "size": [W, total_h], "scale": S}, open(OUT + ".info.json", "w"), ensure_ascii=False)
 np.save(OUT + ".info_mask.npy", caption_mask)
 print("saved", OUT, canvas.size)

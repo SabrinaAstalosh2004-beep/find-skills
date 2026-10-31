@@ -5,6 +5,7 @@ white edge, centred on the geotag head. The approved map is loaded unchanged; th
 (4x supersampled) and composited. Every other pixel stays identical.
 """
 import json
+import os
 import sys
 
 import cv2
@@ -15,7 +16,8 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 SS = 4
 
 base = Image.open(SRC).convert("RGB")
-W, H = base.size
+S = int(os.environ.get("SCALE", "1"))  # hi-res build: draw natively at S x the map resolution
+W, H = base.size[0] // S, base.size[1] // S
 orig = np.asarray(base).copy()
 
 BLUE = (33, 110, 224)          # geotag colour (add_arch_marker.py)
@@ -30,7 +32,7 @@ PAD_X, PAD_Y, CORNER, EDGE = 10, 8, 10, 2
 
 
 def down(img):
-    return cv2.resize(np.asarray(img), (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
+    return cv2.resize(np.asarray(img), (W * S, H * S), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 
 
 fonts = [ImageFont.truetype(f, FS * SS) for _, f in LINES]

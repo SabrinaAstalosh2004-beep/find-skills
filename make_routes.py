@@ -12,6 +12,7 @@ RMS < 1 px) and snapping the hand-drawn strokes to the map geometry:
   museum facade below the check mark . y ~ 847-852 at x 610-626
 """
 import json
+import os
 import sys
 
 import cv2
@@ -22,7 +23,8 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 SS = 4  # supersampling factor
 
 base = Image.open(SRC).convert("RGB")
-W, H = base.size
+S = int(os.environ.get("SCALE", "1"))  # hi-res build: draw natively at S x the map resolution
+W, H = base.size[0] // S, base.size[1] // S
 orig = np.asarray(base).copy()
 
 RED = (227, 38, 43)
@@ -239,7 +241,7 @@ def draw_arrow(path, accents=()):
         big |= poly_mask(poly)
         dash_heads.append({"s": float(s0 + DASH_BODY + DASH_HEAD), "tip": poly[3].round(2).tolist(), "dir": dd.round(4).tolist()})
     big |= poly_mask(head)
-    a = cv2.resize(big, (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
+    a = cv2.resize(big, (W * S, H * S), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
     return a, head, d, dash_heads, mids
 
 
@@ -283,7 +285,7 @@ v = np.array([-u[1], u[0]])                             # glyph "down" (towards 
 Mx = np.array([[u[0], v[0], 0], [u[1], v[1], 0]], float)
 Mx[:, 2] = target * SS - Mx[:, :2] @ anchor
 big_t = cv2.warpAffine(ink, Mx, (W * SS, H * SS), flags=cv2.INTER_LINEAR)
-ta = cv2.resize(big_t, (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
+ta = cv2.resize(big_t, (W * S, H * S), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 layers.insert(0, (ta, TEXT))
 corners = np.array([[cols[0], 4 * SS], [cols[-1], 4 * SS], [cols[-1], th - 4 * SS], [cols[0], th - 4 * SS]], float)
 meta["label"] = {"text": LABEL, "baseline_mid": target.tolist(),
@@ -329,11 +331,14 @@ def pick_mids(path, blocked, lo=0.30, hi=0.40):
 text_m = layers[0][0] > 0
 alphas = {name: layers[i + 1][0] for i, (name, _, _) in enumerate(ROUTES)}
 for i, (name, path, col) in enumerate(ROUTES):
-    other = np.zeros((H, W), bool)
+    other = np.zeros((H * S, W * S), bool)
     for on, (_, _, oc) in zip(alphas, ROUTES):
         if oc != col:
             other |= alphas[on] > 0
-    accents = pick_mids(path, bld | other | text_m)
+    if S == 1:
+        accents = pick_mids(path, bld | other | text_m)
+    else:  # same accent positions as the 1x build
+        accents = [h["s"] for h in json.load(open(os.environ["ROUTES_META"]))[name]["mid_heads"]]
     a, _, _, _, mids = draw_arrow(path, accents)
     alphas[name] = a
     layers[i + 1] = (a, col)
@@ -344,7 +349,7 @@ out = orig.astype(np.float32)
 for a, col in layers:
     out = out * (1 - a[..., None]) + np.array(col, np.float32) * a[..., None]
 out = np.round(out).astype(np.uint8)
-mask_any = np.zeros((H, W), bool)
+mask_any = np.zeros((H * S, W * S), bool)
 for a, _ in layers:
     mask_any |= a > 0
 out[~mask_any] = orig[~mask_any]  # guarantee: untouched pixels are bit-identical

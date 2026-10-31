@@ -8,6 +8,7 @@ The approved map is loaded unchanged; the new elements are drawn on transparent 
 (4x supersampled) and composited. Every other pixel stays identical.
 """
 import json
+import os
 import sys
 
 import cv2
@@ -18,7 +19,8 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 SS = 4
 
 base = Image.open(SRC).convert("RGB")
-W, H = base.size
+S = int(os.environ.get("SCALE", "1"))  # hi-res build: draw natively at S x the map resolution
+W, H = base.size[0] // S, base.size[1] // S
 orig = np.asarray(base).copy()
 
 YELLOW = (255, 204, 0)
@@ -56,7 +58,7 @@ def circle(c, r):
 
 
 def down(big):
-    return cv2.resize(np.asarray(big), (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
+    return cv2.resize(np.asarray(big), (W * S, H * S), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 
 
 def arrow(grow):
@@ -101,7 +103,7 @@ out = orig.astype(np.float32)
 for a, col in layers:
     out = out * (1 - a[..., None]) + np.array(col, np.float32) * a[..., None]
 out = np.round(out).astype(np.uint8)
-mask = np.zeros((H, W), bool)
+mask = np.zeros((H * S, W * S), bool)
 for a, _ in layers:
     mask |= a > 0
 out[~mask] = orig[~mask]

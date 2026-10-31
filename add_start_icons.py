@@ -8,6 +8,7 @@ is searched around the start point, within a sector that keeps it on the right s
 transparent layers (8x supersampled for clean edges) and composited.
 """
 import json
+import os
 import sys
 
 import cv2
@@ -18,7 +19,8 @@ MAP, SRC, OUT = sys.argv[1], sys.argv[2], sys.argv[3]  # original map (for clear
 SS = 8
 
 base = Image.open(SRC).convert("RGB")
-W, H = base.size
+S = int(os.environ.get("SCALE", "1"))  # hi-res build: draw natively at S x the map resolution
+W, H = base.size[0] // S, base.size[1] // S
 orig = np.asarray(base).copy()
 omap = np.asarray(Image.open(MAP).convert("RGB")).astype(int)
 
@@ -114,14 +116,17 @@ def runner(c, s):
 
 
 def down(m):
-    return cv2.resize(m, (W, H), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
+    return cv2.resize(m, (W * S, H * S), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
 
 
-# everything the icons must leave visible: all drawn elements and dark map ink (text, lane arrows, lights)
-keep = np.any(orig.astype(int) != omap, -1) | (omap.max(-1) < 175) & (np.abs(omap[..., 0] - omap[..., 2]) < 25)
-keep |= (omap[..., 0] > 200) & (omap[..., 1] < 120)  # red traffic-light lamps etc.
-keep = cv2.dilate(keep.astype(np.uint8), np.ones((2 * int(MARGIN) + 1,) * 2, np.uint8)) > 0
-yy, xx = np.mgrid[0:H, 0:W]
+if S == 1:
+    # everything the icons must leave visible: all drawn elements and dark map ink (text, lane arrows, lights)
+    keep = np.any(orig.astype(int) != omap, -1) | (omap.max(-1) < 175) & (np.abs(omap[..., 0] - omap[..., 2]) < 25)
+    keep |= (omap[..., 0] > 200) & (omap[..., 1] < 120)  # red traffic-light lamps etc.
+    keep = cv2.dilate(keep.astype(np.uint8), np.ones((2 * int(MARGIN) + 1,) * 2, np.uint8)) > 0
+    yy, xx = np.mgrid[0:H, 0:W]
+else:  # hi-res build: same icon centres as the 1x build
+    FIXED = json.load(open(os.environ["ICONS_JSON"]))
 
 
 def free(c):
@@ -132,8 +137,8 @@ def free(c):
 layers, meta = [], {}
 for name, st in STARTS.items():
     p = np.array(st["start"], float)
-    best = None
-    for rad in np.arange(R + RIM + 2, R + RIM + 90, 1.0):     # nearest free spot to the route start
+    best = None if S == 1 else np.array(FIXED[name]["centre"])
+    for rad in (np.arange(R + RIM + 2, R + RIM + 90, 1.0) if S == 1 else []):  # nearest free spot to the route start
         for ang in np.radians(np.arange(st["sector"][0], st["sector"][1] + 1, 5)):
             c = p + rad * np.array([np.cos(ang), np.sin(ang)])
             if free(c):
@@ -146,14 +151,15 @@ for name, st in STARTS.items():
     rim, dsk = disc(c, R + RIM), disc(c, R)
     glyph = (car(c, 25.2) if name == "car" else runner(c, 21.6)) & dsk
     layers += [(down(rim), WHITE), (down(dsk), st["colour"]), (down(glyph), WHITE)]
-    keep |= down(rim) > 0                                       # icons must not overlap each other either
+    if S == 1:
+        keep |= down(rim) > 0                                   # icons must not overlap each other either
     meta[name] = {"centre": c.round(2).tolist(), "route_start": p.tolist(), "radius": R + RIM}
 
 out = orig.astype(np.float32)
 for a, col in layers:
     out = out * (1 - a[..., None]) + np.array(col, np.float32) * a[..., None]
 out = np.round(out).astype(np.uint8)
-mask = np.zeros((H, W), bool)
+mask = np.zeros((H * S, W * S), bool)
 for a, _ in layers:
     mask |= a > 0
 out[~mask] = orig[~mask]
