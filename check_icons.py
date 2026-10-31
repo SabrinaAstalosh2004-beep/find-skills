@@ -31,5 +31,12 @@ gray_ink = cv2.dilate(gray_ink.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
 check("icons cover no map text, lane arrow or icon", not (mask & gray_ink).any(), f"{(mask & gray_ink).sum()} px")
 for name, m in meta.items():
     c, p = np.array(m["centre"]), np.array(m["route_start"])
-    check(f"{name}: icon right at the route start", 14 < np.hypot(*(c - p)) < 19, f"centre {c.tolist()}, start {p.tolist()}")
+    gap = np.hypot(*(c - p)) - m["radius"]
+    check(f"{name}: icon next to the route start", 0 < gap < 15, f"centre {c.tolist()}, start {p.tolist()}, gap {gap:.1f} px")
+    check(f"{name}: icon 3x the first version (disc 66 px)", abs(2 * m["radius"] - 72) < 0.1, f"diameter with rim {2 * m['radius']:.0f} px")
+names = list(meta)
+for i in range(len(names)):
+    for j in range(i + 1, len(names)):
+        ci, cj = np.array(meta[names[i]]["centre"]), np.array(meta[names[j]]["centre"])
+        check(f"{names[i]} / {names[j]} do not overlap", np.hypot(*(ci - cj)) > meta[names[i]]["radius"] + meta[names[j]]["radius"])
 print("\nALL CHECKS PASSED" if ok else "\nSOME CHECKS FAILED")
