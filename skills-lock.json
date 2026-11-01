@@ -1,11 +1,53 @@
 {
   "version": 1,
   "skills": {
+    "chronology": {
+      "source": "anthropics/claude-for-legal",
+      "sourceType": "github",
+      "skillPath": "litigation-legal/skills/chronology/SKILL.md",
+      "computedHash": "70d08e90b1f9947a2a0d1a4826306461280c6510601f77bd4668fadd2dd45b05"
+    },
+    "draft": {
+      "source": "anthropics/claude-for-legal",
+      "sourceType": "github",
+      "skillPath": "legal-clinic/skills/draft/SKILL.md",
+      "computedHash": "0ee62b25e93344b239fbd95a5352bae9e534a960ccd7ed309ac7ca26b24438f6"
+    },
     "find-skills": {
       "source": "vercel-labs/skills",
       "sourceType": "github",
       "skillPath": "skills/find-skills/SKILL.md",
       "computedHash": "913b9d37d0d54047dd65222bb8c67b2bf04e3cb87dcad1729068d7a8b2c8c396"
+    },
+    "legal-response": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "legal/skills/legal-response/SKILL.md",
+      "computedHash": "76c9c592acf53d8d9ec6d870acb4a886f8cf2f30f9181f9ad64ae81c967d87aa"
+    },
+    "legal-risk-assessment": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "legal/skills/legal-risk-assessment/SKILL.md",
+      "computedHash": "fbc4dffe38a8b8d59ccee1d016654497dc1d9f2f4ceb5ca632dcb4715d22c07f"
+    },
+    "legal-writing": {
+      "source": "anthropics/claude-for-legal",
+      "sourceType": "github",
+      "skillPath": "law-student/skills/legal-writing/SKILL.md",
+      "computedHash": "a64d83fa68da47f168a6796ada0e7249b0eff25534b387582d074fd3c24f12aa"
+    },
+    "research-start": {
+      "source": "anthropics/claude-for-legal",
+      "sourceType": "github",
+      "skillPath": "legal-clinic/skills/research-start/SKILL.md",
+      "computedHash": "fce62a6ef0b8951a4cffd25cc781a37ef45fd3cb5deb550e21edf33ae6585f18"
+    },
+    "review-contract": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "legal/skills/review-contract/SKILL.md",
+      "computedHash": "af4605b5ed7607547961c6965a8d6b0d23759d33e253dee5ceabb11a1b559080"
     }
   }
 }
