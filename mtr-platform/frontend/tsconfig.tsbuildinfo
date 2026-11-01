@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/lib.ts","./src/main.tsx","./src/state.tsx","./src/components/Chart.tsx","./src/components/DataTable.tsx","./src/components/Layout.tsx","./src/components/ui.tsx","./src/pages/DecisionCenter.tsx","./src/pages/ScenarioPage.tsx","./src/pages/Tools.tsx","./src/pages/VitrinePage.tsx"],"version":"5.8.3"}

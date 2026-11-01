@@ -110,7 +110,9 @@ def residual_sigma(y: np.ndarray, method: str, start: int = 6) -> float:
 
 
 def recommended_method(cls: str) -> str:
-    return "ses" if cls.startswith("Регулярный") or cls.startswith("Неустойчивый") else "sba"
+    """SES — для регулярного спроса; TSB — для прерывистого/комковатого: в отличие от Croston/SBA
+    снижает прогноз при прекращении спроса (устаревание), что подтверждено исторической проверкой (витрина 12/13)."""
+    return "ses" if cls.startswith("Регулярный") or cls.startswith("Неустойчивый") else "tsb"
 
 
 def poisson_quantile(lam: float, p: float) -> int:

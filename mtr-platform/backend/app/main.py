@@ -340,9 +340,11 @@ def redist_decision(body: dict = Body(...), ctx: Ctx = Depends(ctx_dep)):
                              forecast_effect=row.get("group_effect"), value_at_risk=row.get("value"), status=status,
                              company_id=row.get("target_company_id"), comment=decision,
                              acceptance="Перемещение оформлено; закупка у получателя не размещена/отменена"), ctx)
+    final = "Отклонено" if decision == "Отклонено" else "В работе"
     with db._lock:
-        db.con().execute("UPDATE actions SET status = ? WHERE action_id = ?", [decision if decision != "Принято в работу" else "В работе", rec["action_id"]])
+        db.con().execute("UPDATE actions SET status = ? WHERE action_id = ?", [final, rec["action_id"]])
     db.persist_actions()
+    rec["status"] = final
     return rec
 
 

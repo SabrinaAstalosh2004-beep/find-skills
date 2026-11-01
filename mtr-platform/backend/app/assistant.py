@@ -108,7 +108,7 @@ def _nez_why(c: Ctx, q):
     facts = [f"НЭЗ изменились с {rub(k['nez_start'])} до {rub(k['nez_end'])} ({rub(k['nez_delta'])}).",
              f"Вновь сформировано {rub(k['nez_new'])}; вовлечено {rub(k['nez_involved'])}; вышло из категории {rub(k['nez_reclass_out'])}; переоценка {rub(k['nez_reval'])}.",
              "Наибольший прирост: " + "; ".join(f"{r.company_label} {rub(r.nez_delta)}" for r in byc.itertuples()) + "."]
-    confirmed = src[src.st.isin(["Перенесён", "Отменён", "Изменено техническое решение", "Завершён"])]
+    confirmed = src[src.st.isin(["Перенесён", "Отменён", "Изменено техническое решение", "Завершён"]) & (src.new_v > 1e5)]
     if len(confirmed):
         facts.append("Формирование НЭЗ на проектах с изменённым статусом (подтверждено статусом проекта): " +
                      "; ".join(f"{r.st} — {rub(r.new_v)}" for r in confirmed.itertuples()) + ".")

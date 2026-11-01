@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif;
+  --color-ink: #0f172a;
+  --color-accent: #1d4ed8;
+}
+
+html, body, #root { height: 100%; }
+body { @apply bg-slate-100 text-slate-800 antialiased; font-feature-settings: "tnum" 1; }
+@layer components {
+.card { @apply bg-white rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04)]; }
+.btn { @apply inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50; }
+.btn-primary { @apply inline-flex items-center gap-1.5 rounded-md bg-blue-700 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-800 disabled:opacity-50; }
+.sel { @apply rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40; }
+.chip { @apply inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide; }
+.scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+}
+
+@media print {
+  aside, .no-print { display: none !important; }
+  main { overflow: visible !important; }
+  .card { break-inside: avoid; box-shadow: none; }
+  body { background: white; }
+}

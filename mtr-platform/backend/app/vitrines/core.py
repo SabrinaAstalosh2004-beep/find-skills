@@ -62,7 +62,7 @@ def v01(ctx: Ctx, opts: dict) -> dict:
         kpi("fin_share", "Доля в оборотных активах", k["stock_end"] / ca * 100 if ca else None, "pct",
             note="Финансовая база — оборотные активы обществ (демо). При фильтре по МТР/направлениям показатель отражает долю отфильтрованных запасов."
             if _non_company_filters(ctx) else "Финансовая база — оборотные активы обществ (демо)"),
-        kpi("capex_opex", "CAPEX / OPEX+RevEx", capex, sub=f"OPEX+RevEx: {rub(opex)} · CAPEX {pct(capex / k['stock_end'] * 100 if k['stock_end'] else None)}"),
+        kpi("capex_opex", "Запасы CAPEX", capex, sub=f"доля {pct(capex / k['stock_end'] * 100 if k['stock_end'] else None)} · OPEX+RevEx: {rub(opex)}"),
         kpi("nez_end", "НЭЗ", k["nez_end"], prev=kp.get("nez_end"), hib=False, sub=f"доля {pct(k['nez_share'])} при цели {pct(t['nez_share_pct'])}",
             target=None, status="bad" if k["nez_share"] > t["nez_share_pct"] else "ok"),
         kpi("turnover_days", "Оборачиваемость", k["turnover_days"], "days", prev=kp.get("turnover_days"), target=t["turnover_days"], hib=False,

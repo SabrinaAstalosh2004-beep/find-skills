@@ -59,7 +59,7 @@ def zip_table(ctx: Ctx) -> pd.DataFrame:
     for i, pid in enumerate(pos.position_id):
         y = M[i]
         cls = forecast.classify(y)
-        meth = forecast.recommended_method(cls) if cls != "Нет спроса" else "sba"
+        meth = forecast.recommended_method(cls) if cls != "Нет спроса" else "tsb"
         lam = forecast.next_level(y, meth) if cls != "Нет спроса" else 0.0
         rows.append((pid, cls, forecast.METHODS[meth], lam, int((y > 0).sum()), float(y.sum())))
     f = pd.DataFrame(rows, columns=["position_id", "demand_class", "method", "lambda_month", "months_with_demand", "qty_hist"])
@@ -97,7 +97,7 @@ def v12(ctx: Ctx, opts: dict) -> dict:
                                    col("criticality", "Критичность"), col("failure_rate_year", "Отказов в год", "num"), col("mtbf_hours", "MTBF, ч", "int"),
                                    col("mttr_hours", "MTTR, ч", "int")])))
     sec.append(section("req", "why", f"Потребность в ЗИП по надёжности: уровень обслуживания {pct(sl * 100, 0)}",
-                       "λ — прогноз интенсивности потребления (метод по классу спроса: SBA для прерывистого, SES для регулярного); "
+                       "λ — прогноз интенсивности потребления (метод по классу спроса: TSB для прерывистого — учитывает устаревание спроса и показал наименьшее смещение на истории; SES для регулярного); "
                        "требуемый запас — квантиль Пуассона спроса за срок поставки; для критичных — не менее 1",
                        table=table(d.sort_values(["gap", "price"], ascending=[False, False]), [
                            col("company_name", "Общество"), col("material_name", "ЗИП"), col("criticality", "Критичн."), col("demand_class", "Класс спроса"),
@@ -173,9 +173,9 @@ def v13(ctx: Ctx, opts: dict) -> dict:
             bt["demand_type"] = dt_
             acc.append(bt)
     if acc:
-        A = pd.concat(acc)
-        best = A.loc[A.groupby("demand_type").wape.idxmin()] if A.wape.notna().any() else A.head(0)
-        A["best"] = A.apply(lambda r: "Лучший" if ((best.demand_type == r.demand_type) & (best.method == r.method)).any() else "", axis=1)
+        A = pd.concat(acc, ignore_index=True)
+        best_idx = set(A.groupby("demand_type").wape.idxmin().dropna().astype(int)) if A.wape.notna().any() else set()
+        A["best"] = ["Лучший" if i in best_idx else "" for i in A.index]
         sec.append(section("acc", "why", "Точность прогнозирования: методы против базовых и против плана",
                            "Историческая проверка без использования будущих данных (rolling origin, горизонт 1 мес., позиции до 500 на тип спроса)",
                            table=table(A, [col("demand_type", "Тип спроса"), col("method", "Метод"), col("wape", "WAPE, %", "pct"), col("bias", "Смещение, %", "pct"),
@@ -194,20 +194,25 @@ def v13(ctx: Ctx, opts: dict) -> dict:
     po = po.merge(cal, left_on="mm", right_on="month_start", how="left")
     po["m"] = po.m.fillna(c.m2 + 1).clip(lower=c.m2 + 1)
     arr = po.groupby("m").v.sum()
-    S = float(hist.stock.iloc[-1])
-    xs, mid, lo, hi, recs = [], [], [], [], []
+    rec_rate = float(hist.receipts.tail(12).mean())
+    S_only = S_rr = float(hist.stock.iloc[-1])
+    xs, mid, only, lo, hi, recs = [], [], [], [], [], []
     for i in range(1, hz + 1):
         m = c.m2 + i
-        S = max(0.0, S + float(arr.get(m, 0.0)) - lvl)
+        po_m = float(arr.get(m, 0.0))
+        S_only = max(0.0, S_only + po_m - lvl)
+        S_rr = max(0.0, S_rr + max(po_m, rec_rate) - lvl)
         xs.append(db.month_label(m))
-        mid.append(S)
-        lo.append(max(0.0, S - 1.2816 * sig * np.sqrt(i)))
-        hi.append(S + 1.2816 * sig * np.sqrt(i))
-        recs.append(float(arr.get(m, 0.0)))
-    sec.append(section("proj", "risk", f"Прогноз остатка на {hz} мес. при сохранении текущей ситуации: {rub(mid[-1])}",
-                       "Остаток + открытые заказы по плановым датам − прогноз потребления (SES); интервал P10–P90 по ошибкам прогноза. "
-                       "Новые, ещё не размещённые заказы не учитываются — прогноз является нижней оценкой роста.",
-                       chart=band(xs, [dict(name="Прогноз остатка", data=mid), dict(name="Поступления по открытым заказам", data=recs, type="bar", muted=True)], lo, hi),
+        mid.append(S_rr)
+        only.append(S_only)
+        lo.append(max(0.0, S_rr - 1.2816 * sig * np.sqrt(i)))
+        hi.append(S_rr + 1.2816 * sig * np.sqrt(i))
+        recs.append(max(po_m, rec_rate))
+    sec.append(section("proj", "risk", f"Прогноз остатка на {hz} мес. при сохранении текущей ситуации: {rub(mid[-1])} (нижняя оценка {rub(only[-1])})",
+                       f"Основная оценка: остаток + поступления (не меньше среднего темпа за 12 мес. {rub(rec_rate)}/мес. и не меньше открытых заказов) − прогноз потребления (SES); "
+                       "интервал P10–P90 по ошибкам прогноза потребления. Нижняя оценка — только уже размещённые заказы.",
+                       chart=band(xs, [dict(name="Прогноз остатка (текущий темп поступлений)", data=mid), dict(name="Нижняя оценка: только открытые заказы", data=only, dashed=True),
+                                       dict(name="Поступления в прогнозе", data=recs, type="bar", muted=True)], lo, hi),
                        controls=[control("h", "Горизонт", [("3", "3 мес."), ("6", "6 мес."), ("12", "12 мес.")], str(hz))]))
     cov = db.q(f"""
     WITH po AS (SELECT position_id, SUM(qty) q FROM purchase_orders WHERE order_date <= (SELECT month_end FROM cal WHERE m={c.m2})

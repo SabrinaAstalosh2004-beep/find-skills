@@ -264,15 +264,23 @@ ACTION_COLUMNS = ["action_id", "issue_key", "created_at", "source", "company_id"
                   "criticality", "repeat_count", "updated_at", "comment"]
 
 
+ACTION_TYPES = {"forecast_effect": "DOUBLE", "actual_effect": "DOUBLE", "value_at_risk": "DOUBLE", "priority": "INTEGER", "repeat_count": "INTEGER"}
+
+
 def _ensure_actions_table(c) -> None:
+    """Таблица мероприятий с явной схемой (пустые колонки не должны получать тип NULL)."""
+    cols = ", ".join(f"{k} {ACTION_TYPES.get(k, 'VARCHAR')}" for k in ACTION_COLUMNS)
+    c.execute(f"CREATE TABLE actions ({cols})")
     f = DATA_DIR / "actions.parquet"
     if f.exists():
-        c.execute(f"CREATE TABLE actions AS SELECT * FROM read_parquet('{f.as_posix()}')")
+        src = f"read_parquet('{f.as_posix()}')"
     else:
         from .actions import seed_actions
-        df = seed_actions()
-        c.register("a_df", df)
-        c.execute("CREATE TABLE actions AS SELECT * FROM a_df")
+        c.register("a_df", seed_actions())
+        src = "a_df"
+    sel = ", ".join(f"CAST({k} AS {ACTION_TYPES.get(k, 'VARCHAR')})" for k in ACTION_COLUMNS)
+    c.execute(f"INSERT INTO actions SELECT {sel} FROM {src}")
+    if src == "a_df":
         c.unregister("a_df")
 
 

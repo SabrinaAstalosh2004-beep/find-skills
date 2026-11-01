@@ -96,8 +96,8 @@ def redistribution_candidates(ctx: Ctx, only_deficit: bool = False) -> pd.DataFr
         scope = db.q(f"SELECT position_id FROM v_pos WHERE {ctx.where()}").position_id
         sc = set(scope)
         out = out[out.source_position.isin(sc) | out.target_position.isin(sc)]
-    acts = db.q("SELECT issue_key, status FROM actions WHERE source = 'Витрина 16: перераспределение'", cache=False)
-    st = dict(zip(acts.issue_key, acts.status))
+    acts = db.q("SELECT issue_key, comment FROM actions WHERE source = 'Витрина 16: перераспределение' ORDER BY created_at", cache=False)
+    st = dict(zip(acts.issue_key, acts.comment))
     out["decision_key"] = out.source_position + ">" + out.target_position
     out["decision"] = out.decision_key.map(st).fillna("Не рассмотрено")
     return out
