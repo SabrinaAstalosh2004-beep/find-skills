@@ -184,7 +184,7 @@ function build(spec: any): any {
       return {
         ...base(yu),
         tooltip: { trigger: 'item', confine: true, formatter: (p: any) => `<b>${p.data.name}</b><br/>${spec.x_label}: ${fmt(p.data.value[0], xu)}<br/>${spec.y_label}: ${fmt(p.data.value[1], yu)}${spec.size_label ? `<br/>${spec.size_label}: ${fmt(p.data.size, 'rub')}` : ''}<br/>${p.seriesName}` },
-        grid: { left: 8, right: 20, top: 36, bottom: 24, containLabel: true },
+        grid: { left: 8, right: 20, top: 58, bottom: 24, containLabel: true },
         xAxis: { ...valAxis(xu), name: spec.x_label, nameLocation: 'middle', nameGap: 22, nameTextStyle: { fontSize: 10, color: '#64748b' }, type: spec.xlog ? 'log' : 'value', scale: true },
         yAxis: { ...valAxis(yu), name: spec.y_label, nameTextStyle: { fontSize: 10, color: '#64748b', align: 'left' }, type: spec.ylog ? 'log' : 'value', scale: !spec.ylog },
         series: groups.map((g, i) => ({

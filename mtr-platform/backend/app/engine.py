@@ -272,7 +272,9 @@ def deficit_positions(ctx: Ctx, asof: int | None = None, horizon: int | None = N
     df = df[df.shortage_qty > 0.05].copy()
     df["shortage_value"] = df.shortage_qty * df.price
     df["coverage_ratio"] = (df.supply_qty / df.need_qty).clip(upper=1)
-    df["days_to_need"] = ((df.first_need_m.fillna(asof + 1) - asof) * 30.4).round()
+    # срок до возникновения дефицита: на сколько дней хватит свободного остатка и заказов при плановом темпе потребности
+    horizon_days = H * 30.4
+    df["days_to_need"] = (df.supply_qty / df.need_qty * horizon_days).clip(0, horizon_days).round()
     df["lead_exceeds"] = df.lead_days > df.days_to_need
     rel = df.base_reliability.fillna(0.9)
     df["probability"] = (0.55 * (1 - df.coverage_ratio) + 0.3 * df.lead_exceeds.astype(float) + 0.15 * (1 - rel)).clip(0, 1).round(2)

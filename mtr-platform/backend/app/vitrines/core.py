@@ -145,8 +145,8 @@ def v01(ctx: Ctx, opts: dict) -> dict:
     pts = [dict(name=f"{r.material_name} · {r.company_name}", x=r.days_to_need, y=r.probability, size=r.shortage_value,
                 group=r.criticality, position_id=r.position_id) for r in dfp.itertuples()]
     sections.append(section("riskmap", "risk", f"Карта критических рисков: {int((dfp.criticality == 'A — критичный').sum())} критичных позиций с риском дефицита",
-                            "Вероятность дефицита (скоринг) × срок до потребности; размер — стоимость непокрытой потребности; цвет — критичность",
-                            chart=scatter(pts, "Дней до потребности", "Вероятность дефицита (скоринг 0–1)", "days", "ratio", "Непокрытая потребность",
+                            "Вероятность дефицита (скоринг) × срок до возникновения дефицита (по покрытию остатком и заказами); размер — стоимость непокрытой потребности; цвет — критичность",
+                            chart=scatter(pts, "Дней до возникновения дефицита", "Вероятность дефицита (скоринг 0–1)", "days", "ratio", "Непокрытая потребность",
                                           groups=["A — критичный", "B — важный", "C — стандартный"])))
     ins = insights.compute(ctx)
     top_i = [i for i in ins if i["type"] != "engine_error"][:10]

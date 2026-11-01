@@ -276,13 +276,13 @@ def v14(ctx: Ctx, opts: dict) -> dict:
                     position_id=r.position_id) for r in top_.itertuples()]
         sec.append(section("map", "risk", "Карта риска: вероятность × последствия × срок до потребности",
                            "Размер — стоимость непокрытой потребности; цвет — последствия (критичность). Вероятность — скоринг: покрытие, срок поставки, надёжность поставщика.",
-                           chart=scatter(pts, "Дней до потребности", "Вероятность (скоринг)", "days", "ratio", "Непокрыто",
+                           chart=scatter(pts, "Дней до возникновения дефицита", "Вероятность (скоринг)", "days", "ratio", "Непокрыто",
                                          groups=["A — критичный", "B — важный", "C — стандартный"]), span=2))
         sec.append(section("list", "risk", "Позиции с недостаточным покрытием", "Критичные позиции без подтверждённого источника покрытия — в начале списка",
                            table=table(d.sort_values(["consequence", "risk_score"], ascending=False), [
                                col("company_name", "Общество"), col("material_name", "МТР"), col("criticality", "Критичность"), col("need_qty", "Потребность", "num"),
                                col("free_qty", "Свободно", "num"), col("po_in_h", "Заказы в горизонте", "num"), col("shortage_qty", "Недостаёт", "num"),
-                               col("shortage_value", "Стоимость", "money"), col("lead_days", "Срок поставки", "int"), col("days_to_need", "Дней до потребности", "int"),
+                               col("shortage_value", "Стоимость", "money"), col("lead_days", "Срок поставки", "int"), col("days_to_need", "Дней до дефицита", "int"),
                                col("probability", "Вероятн.", "num"), col("unavailable_qty", "Недоступно на складе", "num")], row_key="position_id", total=True), span=2))
     ss = supplier_stats(ctx)
     sec.append(section("supp", "why", "Отклонения графиков поставок по поставщикам (12 мес.)", "Доля поставок в срок и среднее отклонение",
