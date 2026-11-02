@@ -1,0 +1,45 @@
+/* EPUB: адаптивная вёрстка для читалок (Apple Books, Google Play Книги, PocketBook) */
+@font-face { font-family: "EBG"; src: url(../fonts/EBGaramond-Regular.ttf); font-weight: normal; font-style: normal; }
+@font-face { font-family: "EBG"; src: url(../fonts/EBGaramond-Italic.ttf); font-weight: normal; font-style: italic; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-Light.ttf); font-weight: 300; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-Italic.ttf); font-style: italic; }
+@font-face { font-family: "CSC"; src: url(../fonts/CormorantSC-Medium.ttf); }
+
+body { font-family: "EBG", Georgia, serif; line-height: 1.5; color: #1A1517; }
+p { margin: 0; text-indent: 1.2em; text-align: justify; }
+h1 { font-family: "CG", serif; font-weight: 300; font-size: 1.9em; text-align: center; margin: 2.5em 0 1em; line-height: 1.15; page-break-before: always; }
+h2 { font-family: "CSC", serif; font-weight: normal; letter-spacing: .25em; font-size: .8em; text-align: center; color: #A88550; margin: 2.5em 0 1em; }
+h3 { font-family: "CG", serif; font-style: italic; font-weight: normal; text-align: center; font-size: 1.2em; }
+img { max-width: 100%; height: auto; }
+.plate { text-align: center; margin: 0 auto 2em; }
+.plate img { width: 80%; }
+.plate p, .photo p, .caption p { text-indent: 0; text-align: center; }
+.photo { text-align: center; margin: 2em 0 .5em; page-break-before: always; }
+.caption p { font-style: italic; font-size: .95em; margin-bottom: 2em; }
+.quotepage { page-break-before: always; page-break-after: always; text-align: center; margin: 30% 1em 0; }
+.quotepage p { text-indent: 0; text-align: center; font-family: "CG", serif; font-style: italic; font-size: 1.35em; line-height: 1.4; }
+.source p { text-indent: 0; text-align: center; font-family: "CSC", serif; font-size: .7em; letter-spacing: .18em; color: #A88550; margin-top: 1.2em; }
+.line-block { text-align: left; display: inline-block; }
+.titlepage { text-align: center; page-break-after: always; margin-top: 20%; }
+.titlepage p { text-indent: 0; text-align: center; }
+.tp-title1 p { font-family: "CG", serif; font-weight: 300; font-size: 2.8em; line-height: 1; }
+.tp-title2 p { font-family: "CG", serif; font-style: italic; font-size: 2em; color: #6B1E2A; }
+.tp-author p, .tp-place p { font-family: "CSC", serif; letter-spacing: .25em; font-size: .75em; color: #A88550; margin: 1.5em 0; }
+.imprint { page-break-before: always; font-size: .8em; color: #8C8078; }
+.imprint p { text-indent: 0; margin-bottom: .6em; }
+.dedication, .epigraph { page-break-before: always; text-align: center; margin-top: 30%; }
+.dedication p { text-indent: 0; text-align: center; font-family: "CG", serif; font-style: italic; font-size: 1.3em; }
+.epigraph .line-block { font-family: "CG", serif; font-style: italic; font-size: 1.15em; }
+.letter p { text-indent: 0; text-align: left; font-family: "CG", serif; font-size: 1.12em; margin-bottom: .6em; }
+.messages p, .notes p, .chronology p { text-indent: 0; text-align: left; margin-bottom: 1em; }
+.messages p { border-left: 1px solid #A88550; padding-left: .8em; }
+.messages strong, .notes strong, .chronology strong { font-family: "CSC", serif; font-weight: normal; color: #6B1E2A; letter-spacing: .08em; }
+.songnote { border: 1px dashed #A88550; padding: .8em; margin: 1.2em 0; }
+.songnote p, .note p, .anthology-intro p { text-indent: 0; font-style: italic; color: #8C8078; text-align: center; }
+.poem { text-align: center; margin-bottom: 2em; }
+.year p { text-indent: 0; text-align: center; font-family: "CSC", serif; font-size: .7em; letter-spacing: .2em; color: #8C8078; }
+.sayings > p { text-indent: 0; text-align: center; font-style: italic; margin-top: 1.4em; }
+.final { page-break-before: always; text-align: center; margin-top: 35%; }
+.final p { text-indent: 0; text-align: center; font-family: "CG", serif; font-style: italic; font-size: 1.6em; }
+.final-sub p { font-family: "CSC", serif; font-style: normal; font-size: .45em; letter-spacing: .3em; color: #A88550; margin-top: 1em; }
+.colophon p { text-indent: 0; text-align: center; font-size: .75em; color: #8C8078; margin-top: 3em; }

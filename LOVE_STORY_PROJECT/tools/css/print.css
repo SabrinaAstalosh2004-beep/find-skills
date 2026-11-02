@@ -1,0 +1,110 @@
+/* PDF для печати: A5 (148×210 мм) + вылеты 3 мм, зеркальные поля */
+@page {
+  size: 148mm 210mm; bleed: 3mm;
+  margin: 17mm 15mm 21mm 19mm;
+  background: #FBF8F2;
+}
+@page :left {
+  margin-left: 15mm; margin-right: 19mm;
+  @top-left { content: "Атлас одной любви"; font-family: "CSC"; font-size: 6.6pt; letter-spacing: .26em; color: #A88550; vertical-align: bottom; padding-bottom: 5mm; }
+  @bottom-left { content: counter(page); font-family: "CG"; font-size: 9pt; color: #6B1E2A; vertical-align: top; padding-top: 7mm; }
+}
+@page :right {
+  @top-right { content: string(chapter); font-family: "CSC"; font-size: 6.6pt; letter-spacing: .26em; color: #A88550; vertical-align: bottom; padding-bottom: 5mm; }
+  @bottom-right { content: counter(page); font-family: "CG"; font-size: 9pt; color: #6B1E2A; vertical-align: top; padding-top: 7mm; }
+}
+@page :blank { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+@page front { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+@page opener { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+@page quote { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+@page photo { @top-left { content: none; } @top-right { content: none; } }
+@page cover { margin: 0; background: #2B0D12; @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+@page bleed { margin: 0; background: #E9E1D3; @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+
+html { font-size: 10.6pt; line-height: 1.47; }
+
+/* обложка */
+.cover { width: 148mm; height: 210mm; }
+.cover-img { top: -3mm; left: -3mm; width: 154mm; height: 216mm; }
+.cover-text { top: 0; height: 210mm; }
+.cover-sub { position: absolute; top: 17mm; left: 0; right: 0; font-size: 6.6pt; }
+.cover-title { position: absolute; top: 147mm; left: 12mm; right: 12mm; font-size: 33pt; line-height: 1.05; }
+.cover-author { position: absolute; top: 189mm; left: 0; right: 0; font-size: 8pt; }
+
+.halftitle, .titlepage, .imprint, .dedication, .epigraph, .contents { page: front; }
+.halftitle { padding-top: 62mm; font-size: 15pt; }
+.titlepage { padding-top: 30mm; }
+.tp-author { font-size: 8pt; margin-bottom: 20mm; }
+.tp-title1 { font-size: 46pt; }
+.tp-title2 { font-size: 34pt; margin-top: 1mm; }
+.tp-sub { font-size: 12pt; margin-top: 10mm; }
+.tp-place { font-size: 7pt; margin-top: 48mm; }
+.imprint { padding-top: 120mm; font-size: 7.6pt; line-height: 1.5; }
+.imprint p + p { margin-top: 2.2mm; }
+.dedication { padding-top: 58mm; font-size: 15pt; line-height: 1.45; }
+.epigraph { padding-top: 60mm; font-size: 13pt; line-height: 1.45; }
+.epigraph .source { margin-top: 7mm; font-size: 6.8pt; }
+.contents { padding-top: 14mm; }
+.contents h2 { font-size: 8pt; margin: 0 0 12mm; }
+.contents li { font-size: 11.4pt; line-height: 1.25; margin-bottom: 3.6mm; padding-right: 10mm; position: relative; }
+.contents li a::after { content: target-counter(attr(href), page); position: absolute; right: 0; font-family: "CG"; color: #6B1E2A; }
+
+/* открытие главы */
+.chapter-opener { padding-top: 2mm; }
+.chapter-opener .plate-img { width: 98mm; height: 98mm; }
+.chapter-opener .fig { margin-top: 4mm; font-size: 6.3pt; }
+.chapter-opener .label { margin-top: 12mm; font-size: 12pt; }
+h1.chapter-title { font-size: 25pt; margin: 2.5mm 6mm 0; }
+.back-opener { padding-top: 58mm; }
+.chapter-opener + p::first-letter { font-size: 1.55em; line-height: 1; }
+
+/* цитаты */
+.quotepage { padding-top: 54mm; padding-left: 4mm; padding-right: 4mm; font-size: 15.5pt; line-height: 1.38; }
+.quotepage .source { margin-top: 8mm; padding-top: 4mm; font-size: 6.8pt; }
+
+/* фотографии */
+.frame.portrait img { width: 96mm; height: 128mm; }
+.frame.landscape img { width: 114mm; height: 85.5mm; }
+.frame.full img { width: 114mm; height: 152mm; }
+.photo-page { padding-top: 12mm; }
+.photo-page .frame.landscape { padding-top: 30mm; }
+.photo-page .caption { margin-top: 7mm; font-size: 10.5pt; line-height: 1.35; padding: 0 8mm; }
+.pair { padding-top: 26mm; }
+.pair-row { gap: 5mm; }
+.pair-cell img { width: 54mm; height: 72mm; }
+
+/* фото «в обрез» */
+.bleed-page { page: bleed; break-before: page; break-after: page; position: relative; width: 148mm; height: 210mm; }
+.bleed-page p { text-indent: 0; }
+.bleed-img { position: absolute; top: -3mm; left: -3mm; width: 154mm; height: 216mm; object-fit: cover; }
+.bleed-caption { position: absolute; left: 22mm; right: 22mm; bottom: 12mm; background: rgba(245,239,228,.92); padding: 2.6mm 4mm; text-align: center; }
+.bleed-caption p { text-align: center; font-size: 9pt; line-height: 1.3; }
+
+/* письма и записи */
+.letter { margin: 2mm 3mm 4mm; font-size: 11.6pt; line-height: 1.42; }
+.letter-long { margin-top: 0; }
+.messages p { margin: 0 0 3.6mm; padding-left: 4mm; font-size: 10.2pt; }
+.messages strong { font-size: 7.4pt; }
+.notes p { margin: 0 0 3mm; }
+.notes { margin: 3mm 0 4mm; }
+.notes strong { font-size: 7.6pt; }
+.songnote { margin: 4mm 8mm; padding: 3mm 4mm; font-size: 10pt; }
+.chronology { margin: 2mm 0 0 3mm; padding-left: 5mm; }
+.chronology p { margin-bottom: 3.4mm; font-size: 10.4pt; line-height: 1.35; }
+.chronology strong { font-size: 7.4pt; display: block; }
+.note, .anthology-intro { margin-top: 5mm; font-size: 9pt; }
+
+/* антология */
+h2.poet { font-size: 7.6pt; margin: 9mm 0 3mm; }
+.poem { font-size: 10.4pt; line-height: 1.36; margin-bottom: 6mm; }
+.poem h3 { font-size: 13pt; margin: 0 0 3mm; }
+.poem .year { margin-top: 2mm; font-size: 6.6pt; }
+.lang-en .line-block { font-size: 9.8pt; }
+.sayings > p { font-size: 12pt; line-height: 1.38; margin: 6mm 4mm 2mm; }
+.sayings .source { font-size: 6.6pt; margin-bottom: 4mm; }
+
+/* финал */
+.final { padding-top: 78mm; }
+.final > p { font-size: 22pt; }
+.final-sub { margin-top: 8mm; font-size: 7pt; }
+.colophon { padding-top: 150mm; font-size: 6.4pt; line-height: 1.8; }

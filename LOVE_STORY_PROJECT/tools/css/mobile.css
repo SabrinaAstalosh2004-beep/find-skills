@@ -1,0 +1,86 @@
+/* PDF для iPhone: вытянутая страница ~9:19.5, крупный кегль, без вылетов */
+@page {
+  size: 108mm 234mm;
+  margin: 13mm 8mm 14mm 8mm;
+  background: #FBF8F2;
+  @bottom-center { content: counter(page); font-family: "CG"; font-size: 9pt; color: #6B1E2A; }
+}
+@page front { @bottom-center { content: none; } }
+@page opener { @bottom-center { content: none; } }
+@page quote { @bottom-center { content: none; } }
+@page photo { @bottom-center { content: none; } }
+@page cover { margin: 0; background: #2B0D12; @bottom-center { content: none; } }
+
+html { font-size: 12.6pt; line-height: 1.5; }
+p { text-align: left; }
+
+.cover { width: 108mm; height: 234mm; }
+.cover-img { top: 12mm; left: 0; width: 108mm; height: 153.2mm; }
+.cover-text { top: 0; height: 234mm; }
+.cover-sub { position: absolute; top: 18mm; left: 0; right: 0; font-size: 6.6pt; }
+.cover-title { position: absolute; top: 162mm; left: 8mm; right: 8mm; font-size: 30pt; line-height: 1.05; }
+.cover-author { position: absolute; top: 212mm; left: 0; right: 0; font-size: 8pt; }
+
+.halftitle, .titlepage, .imprint, .dedication, .epigraph, .contents { page: front; break-before: page; }
+.halftitle { padding-top: 80mm; font-size: 16pt; }
+.titlepage { padding-top: 40mm; }
+.tp-author { font-size: 8pt; margin-bottom: 22mm; }
+.tp-title1 { font-size: 42pt; }
+.tp-title2 { font-size: 30pt; }
+.tp-sub { font-size: 12pt; margin-top: 10mm; }
+.tp-place { font-size: 7pt; margin-top: 50mm; }
+.imprint { padding-top: 120mm; font-size: 9pt; line-height: 1.5; }
+.imprint p + p { margin-top: 2.4mm; }
+.dedication { padding-top: 76mm; font-size: 16pt; line-height: 1.45; }
+.epigraph { padding-top: 76mm; font-size: 14pt; line-height: 1.45; }
+.epigraph .source { margin-top: 7mm; font-size: 7pt; }
+.contents { padding-top: 10mm; }
+.contents h2 { font-size: 8pt; margin: 0 0 10mm; }
+.contents li { font-size: 13pt; line-height: 1.25; margin-bottom: 4.6mm; }
+
+.chapter-opener, .halftitle, .titlepage, .dedication, .epigraph, .contents, .final { break-before: page; }
+.chapter-opener { padding-top: 16mm; }
+.chapter-opener .plate-img { width: 88mm; height: 88mm; }
+.chapter-opener .fig { margin-top: 4mm; font-size: 6.4pt; }
+.chapter-opener .label { margin-top: 14mm; font-size: 13pt; }
+h1.chapter-title { font-size: 25pt; margin: 3mm 2mm 0; }
+.back-opener { padding-top: 70mm; }
+.chapter-opener + p::first-letter { font-size: 1.55em; line-height: 1; }
+
+.quotepage { padding-top: 66mm; padding-left: 2mm; padding-right: 2mm; font-size: 16pt; line-height: 1.4; }
+.quotepage .source { margin-top: 8mm; padding-top: 4mm; font-size: 7pt; }
+.quotepage .source p { white-space: normal; margin-left: -30mm; margin-right: -30mm; }
+
+.photo-page { padding-top: 22mm; }
+.frame.portrait img { width: 92mm; height: 122.7mm; }
+.frame.landscape img { width: 92mm; height: 69mm; }
+.frame.full img { width: 92mm; height: 130.5mm; }
+.photo-page .frame.landscape { padding-top: 34mm; }
+.photo-page .caption { margin-top: 7mm; font-size: 12pt; line-height: 1.35; padding: 0 4mm; }
+.pair { padding-top: 14mm; }
+.pair-row { display: block; }
+.pair-cell img { width: 64mm; height: 85.3mm; margin: 0 auto 4mm; }
+
+.letter { margin: 2mm 1mm 4mm; font-size: 13.4pt; line-height: 1.45; }
+.messages p { margin: 0 0 4mm; padding-left: 3.5mm; }
+.messages strong, .notes strong, .chronology strong { font-size: 8pt; }
+.notes p { margin: 0 0 3.4mm; }
+.notes { margin: 3mm 0 4mm; }
+.songnote { margin: 4mm 2mm; padding: 3mm; font-size: 12pt; }
+.chronology { margin: 2mm 0 0 2mm; padding-left: 4mm; }
+.chronology p { margin-bottom: 3.6mm; line-height: 1.35; }
+.chronology strong { display: block; }
+.note, .anthology-intro { margin-top: 5mm; font-size: 11pt; }
+
+h2.poet { font-size: 8pt; margin: 10mm 0 3mm; }
+.poem { font-size: 12pt; line-height: 1.38; margin-bottom: 6mm; }
+.poem h3 { font-size: 14pt; margin: 0 0 3mm; }
+.poem .year { margin-top: 2mm; font-size: 7pt; }
+.lang-en .line-block { font-size: 10.6pt; }
+.sayings > p { font-size: 13.6pt; line-height: 1.38; margin: 6mm 1mm 2mm; }
+.sayings .source { font-size: 7pt; margin-bottom: 4mm; }
+
+.final { padding-top: 90mm; }
+.final > p { font-size: 24pt; }
+.final-sub { margin-top: 8mm; font-size: 7pt; }
+.colophon { padding-top: 160mm; font-size: 7pt; line-height: 1.8; }

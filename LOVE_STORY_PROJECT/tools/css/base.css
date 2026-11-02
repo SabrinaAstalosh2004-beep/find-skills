@@ -1,0 +1,102 @@
+/* Общая типографика книги (печать и мобильная версия) */
+@font-face { font-family: "EBG"; src: url(../fonts/EBGaramond-Regular.ttf); font-weight: 400; font-style: normal; }
+@font-face { font-family: "EBG"; src: url(../fonts/EBGaramond-Italic.ttf); font-weight: 400; font-style: italic; }
+@font-face { font-family: "EBG"; src: url(../fonts/EBGaramond-Medium.ttf); font-weight: 500; font-style: normal; }
+@font-face { font-family: "EBG"; src: url(../fonts/EBGaramond-SemiBold.ttf); font-weight: 600; font-style: normal; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-Light.ttf); font-weight: 300; font-style: normal; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-LightItalic.ttf); font-weight: 300; font-style: italic; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-Regular.ttf); font-weight: 400; font-style: normal; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-Italic.ttf); font-weight: 400; font-style: italic; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-Medium.ttf); font-weight: 500; font-style: normal; }
+@font-face { font-family: "CG"; src: url(../fonts/CormorantGaramond-MediumItalic.ttf); font-weight: 500; font-style: italic; }
+@font-face { font-family: "CSC"; src: url(../fonts/CormorantSC-Medium.ttf); font-weight: 500; }
+
+:root {
+  --milk: #F5EFE4; --ink: #1A1517; --bordeaux: #6B1E2A; --gold: #A88550; --ash: #8C8078;
+}
+
+html { font-family: "EBG", serif; color: var(--ink); }
+body { margin: 0; }
+p { margin: 0; text-indent: 1.25em; text-align: justify; hyphens: auto; orphans: 2; widows: 2; }
+em { font-style: italic; }
+
+/* ---------- обложка ---------- */
+.cover { page: cover; position: relative; height: 100%; }
+.cover p { text-indent: 0; }
+.cover-img { position: absolute; display: block; }
+.cover-text { position: absolute; left: 0; right: 0; text-align: center; color: var(--milk); }
+.cover-text .cover-sub p, .cover-text .cover-author p { text-align: center; font-family: "CSC"; letter-spacing: .32em; color: #CDAE7A; }
+.cover-text .cover-title p { text-align: center; font-family: "CG"; font-weight: 300; font-style: italic; color: var(--milk); }
+
+/* ---------- титульные элементы ---------- */
+.halftitle, .titlepage, .dedication, .epigraph, .contents, .final { break-before: right; }
+.imprint { break-before: left; }
+.halftitle p { text-align: center; text-indent: 0; font-family: "CG"; font-style: italic; font-weight: 400; }
+.titlepage p { text-align: center; text-indent: 0; }
+.tp-author p { font-family: "CSC"; letter-spacing: .3em; color: var(--gold); }
+.tp-title1 p, .tp-title2 p { font-family: "CG"; font-weight: 300; line-height: 1; }
+.tp-title2 p { font-style: italic; color: var(--bordeaux); }
+.tp-sub p { font-family: "CG"; font-style: italic; }
+.tp-place p { font-family: "CSC"; letter-spacing: .25em; color: var(--ash); }
+.imprint p { text-indent: 0; text-align: left; color: var(--ash); hyphens: manual; }
+.dedication p { text-align: center; text-indent: 0; font-family: "CG"; font-style: italic; font-weight: 400; }
+.epigraph { text-align: center; }
+.epigraph .line-block { font-family: "CG"; font-style: italic; display: inline-block; text-align: left; }
+.source p { text-align: center; text-indent: 0; font-family: "CSC"; letter-spacing: .18em; color: var(--gold); }
+.contents h2 { font-family: "CSC"; font-weight: 500; letter-spacing: .3em; text-align: center; color: var(--gold); }
+.contents ul { list-style: none; padding: 0; margin: 0; }
+.contents li { font-family: "CG"; font-weight: 500; }
+.contents a { color: var(--ink); text-decoration: none; }
+
+/* ---------- открытие главы ---------- */
+.chapter-opener { break-before: right; break-after: page; page: opener; text-align: center; }
+.chapter-opener p { text-indent: 0; text-align: center; }
+.chapter-opener .plate-img { display: block; margin: 0 auto; }
+.chapter-opener .fig p { font-family: "CSC"; letter-spacing: .28em; color: var(--ash); }
+.chapter-opener .label p { font-family: "CG"; font-style: italic; color: var(--bordeaux); }
+h1.chapter-title { font-family: "CG"; font-weight: 300; margin: 0; line-height: 1.1; hyphens: manual; string-set: chapter content(); }
+.chapter-opener + p { text-indent: 0; }
+.chapter-opener + p::first-letter { font-family: "CG"; font-weight: 500; color: var(--bordeaux); }
+
+/* ---------- страницы-цитаты ---------- */
+.quotepage { page: quote; break-before: page; break-after: page; text-align: center; }
+.quotepage > p, .quotepage .line-block { font-family: "CG"; font-style: italic; font-weight: 400; text-align: center; text-indent: 0; hyphens: manual; color: var(--ink); }
+.quotepage .line-block { display: inline-block; text-align: left; }
+.quotepage .source { border-top: .5pt solid var(--gold); width: 14mm; margin-left: auto; margin-right: auto; }
+.quotepage .source p { white-space: nowrap; margin-left: -40mm; margin-right: -40mm; }
+
+/* ---------- фотографии ---------- */
+.photo-page { page: photo; break-before: page; break-after: page; text-align: center; }
+.photo-page p { text-indent: 0; text-align: center; }
+.photo-page .frame img { object-fit: contain; }
+.photo-page .caption p, .bleed-caption p { font-family: "CG"; font-style: italic; font-weight: 500; color: var(--ink); hyphens: manual; }
+.pair-row { display: flex; justify-content: center; }
+.pair-cell img { object-fit: contain; display: block; }
+
+/* ---------- письма, переписка, записи ---------- */
+.letter p { text-indent: 0; text-align: left; hyphens: manual; font-family: "CG"; font-weight: 500; }
+.letter p + p { margin-top: .55em; }
+.letter p:first-child em { font-family: "CSC"; font-style: normal; letter-spacing: .14em; color: var(--gold); }
+.messages p, .notes p, .chronology p { text-indent: 0; text-align: left; break-inside: avoid; }
+.messages strong, .notes strong, .chronology strong { font-family: "CSC"; font-weight: 500; letter-spacing: .1em; color: var(--bordeaux); }
+.messages p { border-left: .6pt solid var(--gold); }
+.songnote { border: .5pt dashed var(--gold); text-align: center; }
+.songnote p { text-indent: 0; text-align: center; font-family: "CG"; font-style: italic; color: var(--ash); hyphens: manual; }
+.chronology { border-left: .5pt solid var(--gold); }
+.note p, .anthology-intro p { text-indent: 0; font-style: italic; color: var(--ash); text-align: left; }
+
+/* ---------- антология ---------- */
+h2.poet { font-family: "CSC"; font-weight: 500; letter-spacing: .28em; color: var(--gold); text-align: center; break-after: avoid; }
+.poem { text-align: center; break-inside: avoid; }
+.poem h3 { font-family: "CG"; font-style: italic; font-weight: 500; text-align: center; break-after: avoid; }
+.poem .line-block { display: inline-block; text-align: left; }
+.poem .year p { text-align: center; text-indent: 0; font-family: "CSC"; letter-spacing: .2em; color: var(--ash); }
+.sayings > p { text-indent: 0; font-family: "CG"; font-style: italic; font-weight: 500; text-align: center; hyphens: manual; break-after: avoid; }
+.sayings .source { break-before: avoid; }
+
+/* ---------- финал ---------- */
+.final { page: quote; text-align: center; }
+.final p { text-indent: 0; text-align: center; font-family: "CG"; font-style: italic; font-weight: 300; }
+.final-sub p { font-family: "CSC"; font-style: normal; letter-spacing: .32em; color: var(--gold); }
+.colophon { page: quote; break-before: page; }
+.colophon p { text-indent: 0; text-align: center; font-family: "CSC"; letter-spacing: .14em; color: var(--ash); hyphens: manual; }
